@@ -26,7 +26,7 @@ export default class UserFetcher {
 
     public async username(): Promise<string | null> {
         const user: Users | undefined = await this.getAuthor();
-        if (user) {
+        if (user && user.lastFMUsername) {
             return user.lastFMUsername;
         } else {
             return null;
@@ -35,7 +35,7 @@ export default class UserFetcher {
 
     public async usernameFromID(id: string): Promise<string | null> {
         const user: Users | undefined = await this.getByID(id);
-        if (user) {
+        if (user && user.lastFMUsername) {
             return user.lastFMUsername;
         } else {
             return null;

@@ -9,7 +9,7 @@ export class Users extends BaseEntity {
     @Column({ unique: true })
     discordUserID!: string;
 
-    @Column()
-    lastFMUsername!: string;
+    @Column({ nullable: true })
+    lastFMUsername?: string;
 
 }

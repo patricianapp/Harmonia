@@ -1,3 +1,4 @@
+import { Not, IsNull } from 'typeorm';
 import CommandParams from "../handler/CommandParams";
 import StartTyping from "../hooks/StartTyping";
 import { Message, Member } from "eris";
@@ -38,9 +39,10 @@ export default class ImLuckyCommand extends CommandParams {
         const lib = new Library((message.channel.client as FMcord).apikeys.lastFM);
         const users = await Users.find({
             where: [
-                ...message.member!.guild.members.map(x => ({ discordUserID: x.id }))
+                ...message.member!.guild.members.map(x => ({ discordUserID: x.id })),
+                {lastFMUsername: Not(IsNull())}
             ]
-        });
+        }) as Array<Users & { lastFMUsername: string; }>;
         if (!users.length) {
             await message.channel.createMessage(`${message.author.mention}, no one has their Last.fm nicknames set in this server.`);
             return;

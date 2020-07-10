@@ -7,6 +7,8 @@ import snippets from "../snippets";
 import YouTubeRequest from "../classes/YouTubeRequest";
 import NotDisabled from "../checks/NotDisabled";
 import { Disables } from "../entities/Disables";
+import UserFetcher from "../classes/UserFetcher";
+import { Shares } from "../entities/Shares";
 
 export default class YouTubeCommand extends CommandParams {
 
@@ -73,6 +75,40 @@ export default class YouTubeCommand extends CommandParams {
         if (result !== undefined) {
             const reply = await message.channel.createMessage(`${message.author.mention}, result for query \`${query}\`: https://youtu.be/${result.id.videoId}`);
             await reply.addReaction('🤘');
+
+            // save to database
+            const userFetcher = new UserFetcher(message);
+            const username = await userFetcher.username();
+            if(username !== null) {
+
+            }
+            try {
+                const currentUser = await userFetcher.getAuthor();
+                if(currentUser !== undefined) {
+                    // TODO: get spotify info
+
+                    // TODO: post to reddit
+
+                    // TODO: get reddit link
+
+                    // save to database
+                    const newShare = new Shares();
+                    newShare.user = currentUser;
+                    newShare.discordMessageID = reply.id;
+                    newShare.mediaType = 'track';
+                    newShare.title = result.snippet.title;
+                    newShare.youtubeTitle = result.snippet.title;
+                    newShare.youtubeLink = result.id.videoId;
+                    await newShare.save();
+                    console.log(`Share saved with ID ${newShare.id}`);
+                }
+            }
+            catch(e) {
+                await message.channel.createMessage(e);
+                // if (e.message.endsWith(`404`)) {
+                //     await message.channel.createMessage(`${message.author.mention}, no user with the name \`${args.join(` `)}\` found in Last.fm.`);
+                // }
+            }
         } else {
             await message.channel.createMessage(`${message.author.mention}, no results found on query \`${query}\``);
         }
