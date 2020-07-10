@@ -31,7 +31,7 @@ export default class SpotifyCommand extends CommandParams {
                                     { discordID: message.guildID, cmdName: message.command?.label }
                                 ]
                             });
-            
+
                             if (isDisabled !== undefined) {
                                 const guildDisabled = isDisabled.discordID === message.guildID;
                                 await message.channel.createMessage(`${message.author.mention}, command \`${message.command?.label}\` is disabled in ${guildDisabled ? message.member!.guild.name : `this channel`}`);
@@ -71,7 +71,8 @@ export default class SpotifyCommand extends CommandParams {
             if (song) {
                 const track = await lib.findTrack(`${song.name} ${song.artist[`#text`]}`);
                 if (track.tracks.items[0]) {
-                    await message.channel.createMessage(track.tracks.items[0].external_urls.spotify);
+                    const reply = await message.channel.createMessage(track.tracks.items[0].external_urls.spotify);
+                    await reply.addReaction('🤘');
                 } else {
                     await message.channel.createMessage(`${message.author.mention}, your listened track wasn't found on Spotify.`);
                 }

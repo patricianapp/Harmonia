@@ -14,7 +14,7 @@ export default class YouTubeCommand extends CommandParams {
         super(`youtube`, {
             description: `Gets a YouTube link of a searched song or video. If no query is specified, it looks at what you're playing right now.`,
             usage: [`youtube`, `youtube <search query>`].join(`, `),
-            aliases: [`yt`],
+            aliases: [`yt`, `share`],
             hooks: {
                 preCommand: StartTyping,
                 async postCheck(message: Message, args: string[], checkPassed: boolean): Promise<void> {
@@ -38,7 +38,7 @@ export default class YouTubeCommand extends CommandParams {
                     }
                 }
             },
-            requirements: { 
+            requirements: {
                 async custom(message: Message): Promise<boolean> {
                     return (message.channel.client as FMcord).apikeys.youtube !== undefined && await NotDisabled(message);
                 }
@@ -71,7 +71,8 @@ export default class YouTubeCommand extends CommandParams {
         const data = await yt.search(query);
         const result = data.items[0];
         if (result !== undefined) {
-            await message.channel.createMessage(`${message.author.mention}, result for query \`${query}\`: https://youtu.be/${result.id.videoId}`);
+            const reply = await message.channel.createMessage(`${message.author.mention}, result for query \`${query}\`: https://youtu.be/${result.id.videoId}`);
+            await reply.addReaction('🤘');
         } else {
             await message.channel.createMessage(`${message.author.mention}, no results found on query \`${query}\``);
         }
