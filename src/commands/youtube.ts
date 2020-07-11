@@ -9,6 +9,7 @@ import NotDisabled from "../checks/NotDisabled";
 import { Disables } from "../entities/Disables";
 import UserFetcher from "../classes/UserFetcher";
 import { Shares } from "../entities/Shares";
+import Spotify from "../lib/spotify";
 
 export default class YouTubeCommand extends CommandParams {
 
@@ -39,7 +40,7 @@ export default class YouTubeCommand extends CommandParams {
                         }
                     }
                 },
-                async postCommand(message, _args, responseMessage) {
+                async postCommand(message, args, responseMessage) {
                     if(message.guildID && (message.channel as TextChannel).name && responseMessage && responseMessage.content.includes('https://youtu.be/')) {
                         const client = responseMessage.channel.client as FMcord;
                         const videoId = responseMessage.content.split('//youtu.be/')[1];
@@ -63,7 +64,31 @@ export default class YouTubeCommand extends CommandParams {
                             await newShare.save();
                             console.log(`Share saved with ID ${newShare.id}`);
 
-                            // TODO: get spotify info
+                            // get spotify info
+                            const { spotify } = client.apikeys;
+                            const lib = new Spotify(spotify!.id, spotify!.secret);
+                            const spotifyResult = await lib.findTrack(args.join(` `))
+                            if (spotifyResult.tracks.items[0]) {
+                                const spotifyTrack = spotifyResult.tracks.items[0];
+                                const artists = spotifyTrack.artists.map(artist => artist.name);
+                                let artistStr: string;
+                                if(artists.length >  2) {
+                                    artists[artists.length - 1] = '& ' + artists[artists.length - 1];
+                                    artistStr = artists.join(', ')
+                                }
+                                else if (artists.length === 2) {
+                                    artistStr = artists.join(' & ')
+                                }
+                                else {
+                                    artistStr = artists[0];
+                                }
+
+                                newShare.spotifyLink = spotifyTrack.external_urls.spotify;
+                                newShare.title = spotifyTrack.name;
+                                newShare.artist = artistStr;
+                                newShare.displayTitle = `${spotifyTrack.artists[0].name} - ${spotifyTrack.name}`;
+                                await newShare.save();
+                            }
 
                             // TODO: post to reddit
 
@@ -121,7 +146,6 @@ export default class YouTubeCommand extends CommandParams {
         const result = data.items[0];
         if (result !== undefined) {
             return `${message.author.mention}, result for query \`${query}\`: https://youtu.be/${result.id.videoId}`;
-
         } else {
             await message.channel.createMessage(`${message.author.mention}, no results found on query \`${query}\``);
         }

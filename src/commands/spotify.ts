@@ -8,6 +8,7 @@ import Spotify from "../lib/spotify";
 import TrackFetcher from "../classes/TrackFetcher";
 import { Shares } from "../entities/Shares";
 import UserFetcher from "../classes/UserFetcher";
+import YouTubeRequest from "../classes/YouTubeRequest";
 
 export default class SpotifyCommand extends CommandParams {
 
@@ -74,12 +75,20 @@ export default class SpotifyCommand extends CommandParams {
                             newShare.mediaType = 'track';
                             newShare.title = track.name;
                             newShare.artist = artistStr;
+                            newShare.spotifyLink = track.external_urls.spotify;
                             newShare.displayTitle = `${track.artists[0].name} - ${track.name}`;
                             console.log(newShare);
                             await newShare.save();
                             console.log(`Share saved with ID ${newShare.id}`);
 
-                            // TODO: get youtube info
+                            // get youtube info
+                            const yt = new YouTubeRequest(client.apikeys.youtube!);
+                            const data = await yt.search(`${track.artists[0].name} ${track.name}`);
+                            const result = data.items[0];
+                            if (result !== undefined) {
+                                newShare.youtubeLink = `https://youtu.be/${result.id.videoId}`;
+                                await newShare.save();
+                            }
 
                             // TODO: post to reddit
 
