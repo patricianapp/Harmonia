@@ -10,6 +10,8 @@ import { Disables } from "../entities/Disables";
 import UserFetcher from "../classes/UserFetcher";
 import { Shares } from "../entities/Shares";
 import Spotify from "../lib/spotify";
+import RedditPoster from "../classes/RedditPoster";
+import config from '../config';
 
 export default class YouTubeCommand extends CommandParams {
 
@@ -60,7 +62,7 @@ export default class YouTubeCommand extends CommandParams {
                             newShare.mediaType = 'track';
                             newShare.displayTitle = result.snippet.title;
                             newShare.youtubeTitle = result.snippet.title;
-                            newShare.youtubeLink = result.id.videoId;
+                            newShare.youtubeLink = `https://youtu.be/${result.id}`;
                             await newShare.save();
                             console.log(`Share saved with ID ${newShare.id}`);
 
@@ -91,8 +93,18 @@ export default class YouTubeCommand extends CommandParams {
                             }
 
                             // TODO: post to reddit
+                            const reddit = new RedditPoster(config.reddit);
+                            const postId = await reddit.post({
+                                title: result.snippet.title,
+                                url: `https://youtu.be/${result.id}`,
+                                sr: config.reddit.subredditName
+                            });
+                            newShare.redditPostLink = postId;
+                            newShare.save();
 
-                            // TODO: get reddit link
+                            // TODO: add flair based on channel name
+
+                            // TODO: update response message
                         }
                     }
                 }

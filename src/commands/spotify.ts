@@ -9,6 +9,8 @@ import TrackFetcher from "../classes/TrackFetcher";
 import { Shares } from "../entities/Shares";
 import UserFetcher from "../classes/UserFetcher";
 import YouTubeRequest from "../classes/YouTubeRequest";
+import RedditPoster from "../classes/RedditPoster";
+import config from '../config';
 
 export default class SpotifyCommand extends CommandParams {
 
@@ -77,7 +79,6 @@ export default class SpotifyCommand extends CommandParams {
                             newShare.artist = artistStr;
                             newShare.spotifyLink = track.external_urls.spotify;
                             newShare.displayTitle = `${track.artists[0].name} - ${track.name}`;
-                            console.log(newShare);
                             await newShare.save();
                             console.log(`Share saved with ID ${newShare.id}`);
 
@@ -91,8 +92,18 @@ export default class SpotifyCommand extends CommandParams {
                             }
 
                             // TODO: post to reddit
+                            const reddit = new RedditPoster(config.reddit);
+                            const postId = await reddit.post({
+                                title: `${artistStr} - ${track.name}`,
+                                url: track.external_urls.spotify,
+                                sr: config.reddit.subredditName
+                            });
+                            newShare.redditPostLink = postId;
+                            newShare.save();
 
-                            // TODO: get reddit link
+                            // TODO: add flair based on channel name
+
+                            // TODO: update response message
                         }
                     }
                 }

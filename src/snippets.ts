@@ -3,14 +3,14 @@
 import config from "./config";
 import { Message } from "eris";
 
-export default {  
+export default {
     noLogin: `you haven't registered your Last.fm ` +
     `user account to this bot! Please do so with \`${config.prefix}` +
     `login <lastfm username>\` to be able to use this command!`,
     error: `There was an error trying to execute the ` +
     `command. Please try again later.`,
-    github: `https://github.com/kometh0616/fmcord`,
-    getSource: (cmd: string) => `https://github.com/kometh0616/fmcord/blob/master/src/commands/${cmd}.ts`,
+    github: `https://github.com/patricianapp/fmcord`,
+    getSource: (cmd: string) => `https://github.com/patricianapp/fmcord/blob/master/src/commands/${cmd}.ts`,
     notPlaying: `currently, you're not listening to anything.`,
     npNoLogin: `you haven't registered your Last.fm ` +
     `account, therefore, I can't check what you're listening to. To set ` +
