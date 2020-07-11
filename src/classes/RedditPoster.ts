@@ -1,9 +1,7 @@
 import { stringify } from "querystring";
-import https from "https";
 import axios from "axios";
 
 const url = `https://oauth.reddit.com/`;
-
 
 export default class RedditPoster {
 
@@ -62,6 +60,43 @@ export default class RedditPoster {
             }
         })).data.json.data.id;
         return postId;
+    }
+
+    // TODO: getVotes
+    public async getVotes(subredditName: string, postId: string) {
+        const result = (await axios.get(`${url}/r/${subredditName}/api/info?id=${postId}`, {
+            headers: {
+                Authorization: `Bearer ${this.accessToken}`
+            }
+        })).data;
+        console.log(result);
+
+    }
+
+    // TODO: deletePost
+    public async deletePost(subredditName: string, postId: string) {
+        const res = await axios.post(`${url}/r/${subredditName}/api/del`, stringify({
+            id: postId
+        }), {
+            headers: {
+                Authorization: `Bearer ${this.accessToken}`
+            }
+        });
+        console.log(res);
+    }
+
+    // TODO: comment
+    public async comment(subredditName: string, postId: string, text: string) {
+        const res = await axios.post(`${url}/r/${subredditName}/api/comment`, stringify({
+            api_type: 'json',
+            thing_id: postId,
+            text
+        }), {
+            headers: {
+                Authorization: `Bearer ${this.accessToken}`
+            }
+        });
+        console.log(res);
     }
 
     public async getFlairId(subredditName: string, flairName: string): Promise<string | undefined> {

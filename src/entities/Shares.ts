@@ -41,6 +41,9 @@ export class Shares extends BaseEntity {
     redditPostLink?: string;
 
     @Column({ nullable: true })
+    redditPostId?: string;
+
+    @Column({ nullable: true })
     youtubeLink?: string;
 
     @Column({ nullable: true })
@@ -48,4 +51,7 @@ export class Shares extends BaseEntity {
 
     @Column({ nullable: true })
     spotifyLink?: string;
+
+    @Column({ nullable: true })
+    spotifyId?: string;
 }

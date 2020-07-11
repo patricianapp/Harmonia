@@ -99,6 +99,7 @@ export default class SpotifyCommand extends CommandParams {
                                 sr: config.reddit.subredditName
                             }, newShare.channelName);
                             newShare.redditPostLink = `https://reddit.com/r/${config.reddit.subredditName}/comments/${postId}`;
+                            newShare.redditPostId = `t3_${postId}`;
                             newShare.save();
 
                             // TODO: update response message
