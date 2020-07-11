@@ -98,10 +98,8 @@ export default class SpotifyCommand extends CommandParams {
                                 url: track.external_urls.spotify,
                                 sr: config.reddit.subredditName
                             }, newShare.channelName);
-                            newShare.redditPostLink = postId;
+                            newShare.redditPostLink = `https://reddit.com/r/${config.reddit.subredditName}/comments/${postId}`;
                             newShare.save();
-
-                            // TODO: add flair based on channel name
 
                             // TODO: update response message
                         }
