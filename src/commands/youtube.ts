@@ -1,6 +1,6 @@
 import CommandParams from "../handler/CommandParams";
 import StartTyping from "../hooks/StartTyping";
-import { Message } from "eris";
+import { Message, MessageContent } from "eris";
 import FMcord from "../handler/FMcord";
 import TrackFetcher from "../classes/TrackFetcher";
 import snippets from "../snippets";
@@ -38,17 +38,65 @@ export default class YouTubeCommand extends CommandParams {
                             }
                         }
                     }
+                },
+                async postCommand(message, _args, responseMessage) {
+                    if(responseMessage && responseMessage.content.includes('https://youtu.be/')) {
+                        const client = responseMessage.channel.client as FMcord;
+                        const videoId = responseMessage.content.split('//youtu.be/')[1];
+                        const yt = new YouTubeRequest(client.apikeys.youtube!);
+                        const data = await yt.getVideo(videoId);
+                        const result = data.items[0];
+
+                        const userFetcher = new UserFetcher(message);
+                        const user = await userFetcher.getAuthor();
+                        if(user !== undefined) {
+                            // save to database
+                            const newShare = new Shares();
+                            newShare.user = user;
+                            newShare.discordMessageID = responseMessage.id;
+                            newShare.mediaType = 'track';
+                            newShare.title = result.snippet.title;
+                            newShare.youtubeTitle = result.snippet.title;
+                            newShare.youtubeLink = result.id.videoId;
+                            console.log(newShare);
+                            await newShare.save();
+                            console.log(`Share saved with ID ${newShare.id}`);
+
+                            // TODO: get spotify info
+
+                            // TODO: post to reddit
+
+                            // TODO: get reddit link
+                        }
+                    }
                 }
             },
             requirements: {
                 async custom(message: Message): Promise<boolean> {
                     return (message.channel.client as FMcord).apikeys.youtube !== undefined && await NotDisabled(message);
                 }
-            }
+            },
+            reactionButtons: [{
+                emoji: '🤘',
+                type: 'edit',
+                // response: ['sdk']
+                response: async (message: Message) => {
+                    console.log(message);
+                    const share = await Shares.findOne({
+                        discordMessageID: message.id
+                    });
+                    if(share) {
+                        share.votes++;
+                        console.log(share.votes);
+                    }
+                }
+            }],
+            reactionButtonTimeout: 604800
         });
     }
 
-    public async execute(message: Message, args: string[]): Promise<void> {
+
+    public async execute(message: Message, args: string[]): Promise<MessageContent | void> {
         let query: string;
         const client = message.channel.client as FMcord;
         if (args.length > 0) {
@@ -73,42 +121,8 @@ export default class YouTubeCommand extends CommandParams {
         const data = await yt.search(query);
         const result = data.items[0];
         if (result !== undefined) {
-            const reply = await message.channel.createMessage(`${message.author.mention}, result for query \`${query}\`: https://youtu.be/${result.id.videoId}`);
-            await reply.addReaction('🤘');
+            return `${message.author.mention}, result for query \`${query}\`: https://youtu.be/${result.id.videoId}`;
 
-            // save to database
-            const userFetcher = new UserFetcher(message);
-            const username = await userFetcher.username();
-            if(username !== null) {
-
-            }
-            try {
-                const currentUser = await userFetcher.getAuthor();
-                if(currentUser !== undefined) {
-                    // TODO: get spotify info
-
-                    // TODO: post to reddit
-
-                    // TODO: get reddit link
-
-                    // save to database
-                    const newShare = new Shares();
-                    newShare.user = currentUser;
-                    newShare.discordMessageID = reply.id;
-                    newShare.mediaType = 'track';
-                    newShare.title = result.snippet.title;
-                    newShare.youtubeTitle = result.snippet.title;
-                    newShare.youtubeLink = result.id.videoId;
-                    await newShare.save();
-                    console.log(`Share saved with ID ${newShare.id}`);
-                }
-            }
-            catch(e) {
-                await message.channel.createMessage(e);
-                // if (e.message.endsWith(`404`)) {
-                //     await message.channel.createMessage(`${message.author.mention}, no user with the name \`${args.join(` `)}\` found in Last.fm.`);
-                // }
-            }
         } else {
             await message.channel.createMessage(`${message.author.mention}, no results found on query \`${query}\``);
         }

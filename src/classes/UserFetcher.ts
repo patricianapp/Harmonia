@@ -12,7 +12,7 @@ export default class UserFetcher {
         this.message = message;
     }
 
-    public async getByID(id: string): Promise<Users | undefined> {
+    public static async getByID(id: string): Promise<Users | undefined> {
         const user: Users | undefined = await Users.findOne({
             discordUserID: id,
         });
@@ -20,7 +20,7 @@ export default class UserFetcher {
     }
 
     public async getAuthor(): Promise<Users | undefined> {
-        const author: Users | undefined = await this.getByID(this.message.author.id);
+        const author: Users | undefined = await UserFetcher.getByID(this.message.author.id);
         return author;
     }
 
@@ -34,7 +34,7 @@ export default class UserFetcher {
     }
 
     public async usernameFromID(id: string): Promise<string | null> {
-        const user: Users | undefined = await this.getByID(id);
+        const user: Users | undefined = await UserFetcher.getByID(id);
         if (user && user.lastFMUsername) {
             return user.lastFMUsername;
         } else {
@@ -73,7 +73,7 @@ export default class UserFetcher {
     }
 
     public async modeFromID(id: string): Promise<NowPlayingMode | null> {
-        const user = await this.getByID(id);
+        const user = await UserFetcher.getByID(id);
         if (user !== null) {
             const mode = await Modes.findOne({
                 user
