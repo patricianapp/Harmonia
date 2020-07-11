@@ -40,7 +40,7 @@ export default class YouTubeCommand extends CommandParams {
                     }
                 },
                 async postCommand(message, _args, responseMessage) {
-                    if(responseMessage && responseMessage.content.includes('https://youtu.be/')) {
+                    if(message.guildID && responseMessage && responseMessage.content.includes('https://youtu.be/')) {
                         const client = responseMessage.channel.client as FMcord;
                         const videoId = responseMessage.content.split('//youtu.be/')[1];
                         const yt = new YouTubeRequest(client.apikeys.youtube!);
@@ -54,6 +54,7 @@ export default class YouTubeCommand extends CommandParams {
                             const newShare = new Shares();
                             newShare.user = user;
                             newShare.discordMessageID = responseMessage.id;
+                            newShare.discordGuildID = message.guildID;
                             newShare.mediaType = 'track';
                             newShare.title = result.snippet.title;
                             newShare.youtubeTitle = result.snippet.title;
@@ -87,6 +88,7 @@ export default class YouTubeCommand extends CommandParams {
                     });
                     if(share) {
                         share.votes++;
+                        share.save();
                         console.log(share.votes);
                     }
                 }

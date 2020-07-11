@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, ManyToMany, Check } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, ManyToMany, Check, CreateDateColumn, JoinTable, ManyToOne } from "typeorm";
 import { Users } from "./Users";
 
 @Entity(`shares`)
@@ -7,11 +7,17 @@ export class Shares extends BaseEntity {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @ManyToMany(() => Users)
+    @ManyToOne(() => Users, {eager: true})
     user!: Users;
 
     @Column({ unique: true })
     discordMessageID!: string;
+
+    @Column()
+    discordGuildID!: string;
+
+    @CreateDateColumn()
+    datePosted!: Date
 
     @Column()
     mediaType!: string;
