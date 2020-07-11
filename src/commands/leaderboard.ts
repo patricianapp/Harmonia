@@ -44,9 +44,8 @@ export default class ListCommand extends CommandParams {
             relations: ['user']
         });
 
-        console.log(shares[0].user);
         const reply = '**Leaderboard**\n' + shares.map((post: Shares) =>
-            `${post.title} (posted by <@${post.user.discordUserID}>: **${post.votes} votes**)`
+            `${post.displayTitle} (posted by <@${post.user.discordUserID}> in #${post.channelName}: **${post.votes} votes**)`
         ).join('\n');
         await message.channel.createMessage(reply)
     }

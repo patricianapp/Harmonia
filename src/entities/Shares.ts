@@ -20,14 +20,22 @@ export class Shares extends BaseEntity {
     datePosted!: Date
 
     @Column()
+    channelName!: string;
+
+    @Column()
     mediaType!: string;
 
-    // Spotify/Last.fm title if it exists, otherwise YouTube title.
     @Column()
-    title!: string;
+    displayTitle!: string;
 
     @Column({ default: 0 })
     votes!: number;
+
+    @Column({ nullable: true })
+    title?: string;
+
+    @Column({ nullable: true })
+    artist?: string;
 
     @Column({ nullable: true })
     redditPostLink?: string;
@@ -40,9 +48,4 @@ export class Shares extends BaseEntity {
 
     @Column({ nullable: true })
     spotifyLink?: string;
-
-    @Column({ nullable: true })
-    artist?: string;
-
-
 }

@@ -40,7 +40,7 @@ interface SpotifySimplifiedAlbum {
     restrictions: SpotifyRestriction;
     type: `album`;
     uri: string;
-} 
+}
 
 interface SpotifySimplifiedArtist {
     external_urls: Record<string, string>;
@@ -165,7 +165,14 @@ export default class Spotify {
             q, type: `track`
         });
         const url = `https://api.spotify.com/v1/search?${query}`;
-        const data: SpotifyTrack = await this.request(url) as SpotifyTrack;
+        const data = await this.request(url) as SpotifyTrack;
+        return data;
+    }
+
+    public async findTrackById(id: string): Promise<SpotifyTrackItem> {
+        console.log(id);
+        const url = `https://api.spotify.com/v1/tracks/${id}`;
+        const data = await this.request(url) as SpotifyTrackItem;
         return data;
     }
 

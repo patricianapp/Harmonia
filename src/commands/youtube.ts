@@ -1,6 +1,6 @@
 import CommandParams from "../handler/CommandParams";
 import StartTyping from "../hooks/StartTyping";
-import { Message, MessageContent } from "eris";
+import { Message, MessageContent, TextChannel } from "eris";
 import FMcord from "../handler/FMcord";
 import TrackFetcher from "../classes/TrackFetcher";
 import snippets from "../snippets";
@@ -40,7 +40,7 @@ export default class YouTubeCommand extends CommandParams {
                     }
                 },
                 async postCommand(message, _args, responseMessage) {
-                    if(message.guildID && responseMessage && responseMessage.content.includes('https://youtu.be/')) {
+                    if(message.guildID && (message.channel as TextChannel).name && responseMessage && responseMessage.content.includes('https://youtu.be/')) {
                         const client = responseMessage.channel.client as FMcord;
                         const videoId = responseMessage.content.split('//youtu.be/')[1];
                         const yt = new YouTubeRequest(client.apikeys.youtube!);
@@ -55,11 +55,11 @@ export default class YouTubeCommand extends CommandParams {
                             newShare.user = user;
                             newShare.discordMessageID = responseMessage.id;
                             newShare.discordGuildID = message.guildID;
+                            newShare.channelName = (message.channel as TextChannel).name;
                             newShare.mediaType = 'track';
-                            newShare.title = result.snippet.title;
+                            newShare.displayTitle = result.snippet.title;
                             newShare.youtubeTitle = result.snippet.title;
                             newShare.youtubeLink = result.id.videoId;
-                            console.log(newShare);
                             await newShare.save();
                             console.log(`Share saved with ID ${newShare.id}`);
 
@@ -80,16 +80,13 @@ export default class YouTubeCommand extends CommandParams {
             reactionButtons: [{
                 emoji: '🤘',
                 type: 'edit',
-                // response: ['sdk']
                 response: async (message: Message) => {
-                    console.log(message);
                     const share = await Shares.findOne({
                         discordMessageID: message.id
                     });
                     if(share) {
                         share.votes++;
                         share.save();
-                        console.log(share.votes);
                     }
                 }
             }],
