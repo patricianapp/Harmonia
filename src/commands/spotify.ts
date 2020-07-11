@@ -91,13 +91,13 @@ export default class SpotifyCommand extends CommandParams {
                                 await newShare.save();
                             }
 
-                            // TODO: post to reddit
+                            // post to reddit
                             const reddit = new RedditPoster(config.reddit);
                             const postId = await reddit.post({
                                 title: `${artistStr} - ${track.name}`,
                                 url: track.external_urls.spotify,
                                 sr: config.reddit.subredditName
-                            });
+                            }, newShare.channelName);
                             newShare.redditPostLink = postId;
                             newShare.save();
 

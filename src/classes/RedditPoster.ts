@@ -2,7 +2,7 @@ import { stringify } from "querystring";
 import https from "https";
 import axios from "axios";
 
-const url = `https://oauth.reddit.com/api`;
+const url = `https://oauth.reddit.com/`;
 
 
 export default class RedditPoster {
@@ -38,16 +38,28 @@ export default class RedditPoster {
         })).data.access_token;
     }
 
-    public async post(options = {
-        title: 'test',
-        url: 'https://google.com',
-        sr: this.subredditName,
-    }) {
+    // TODO: Type post options
+    public async post(options: any, channelName: string) {
         await this.refreshAccessToken() // TODO: Timeout
-        const postId = (await axios.post(`${url}/submit`, stringify({
+        const flair = 'metal'; // replace with options.flair_text
+        const autoFlair = true;
+        const flairs = await this.getSubredditFlairs(options.sr);
+        console.log(flairs);
+        let flair_id = flairs.find(flair => flair.text === channelName)?.id;
+        if(!flair_id) {
+            if(autoFlair) {
+                flair_id = await this.addNewFlair(options.sr, channelName);
+            }
+            else {
+                console.log('No flair matches this channel name. Will not post.')
+                return;
+            }
+        }
+        const postId = (await axios.post(`${url}/api/submit`, stringify({
             kind: 'link',
             resubmit: true,
             api_type: 'json',
+            flair_id,
             ...options
         }), {
             headers: {
@@ -55,6 +67,51 @@ export default class RedditPoster {
             }
         })).data.json.data.name;
         return postId;
+    }
+
+    public async getFlairId(subredditName: string, flairName: string): Promise<string> {
+        const flairs = await this.getSubredditFlairs(subredditName);
+        const flairId = flairs.find(flair => flair.text === flairName)?.id;
+        if(flairId) {
+            return flairId;
+        }
+        else {
+            throw `Flair ${flairName} not found in ${subredditName}`;
+        }
+    }
+
+    public async getSubredditFlairs(subredditName: string): Promise<Array<any>> { // TODO: Type flair response
+        try {
+            const result = (await axios.get(`${url}/r/${subredditName}/api/link_flair_v2`, {
+                headers: {
+                    Authorization: `Bearer ${this.accessToken}`
+                }
+            })).data;
+            return result;
+        }
+        catch(e) {
+            console.log(e);
+            return [];
+        }
+    }
+
+    public async addNewFlair(subredditName: string, text: string) {
+        const res = await axios.post(`${url}/r/${subredditName}/api/flairtemplate`, stringify({
+            api_type: 'json',
+            flair_type: 'LINK_FLAIR',
+            text,
+        }), {
+            headers: {
+                Authorization: `Bearer ${this.accessToken}`
+            }
+        })
+        if(res.status === 200) {
+            const flairs = await this.getSubredditFlairs(subredditName);
+            const flairId = flairs.find(flair => flair.text === text)?.id;
+            console.log(flairId);
+            return flairId;
+        }
+        throw `Failed to add flair ${text} to ${subredditName}`;
     }
 
     // public search(query: string): Promise<SearchResult> {

@@ -92,13 +92,13 @@ export default class YouTubeCommand extends CommandParams {
                                 await newShare.save();
                             }
 
-                            // TODO: post to reddit
+                            // post to reddit
                             const reddit = new RedditPoster(config.reddit);
                             const postId = await reddit.post({
                                 title: result.snippet.title,
                                 url: `https://youtu.be/${result.id}`,
                                 sr: config.reddit.subredditName
-                            });
+                            }, newShare.channelName);
                             newShare.redditPostLink = postId;
                             newShare.save();
 
