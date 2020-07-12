@@ -12,10 +12,13 @@ export class Shares extends BaseEntity {
     user!: Users;
 
     @Column({ unique: true })
-    discordLinkMessageID!: string;
+    discordRequestMessageID!: string;
 
     @Column({ unique: true })
-    discordInfoMessageID!: string;
+    discordLinkMessageID!: string;
+
+    @Column({ unique: true, nullable: true })
+    discordInfoMessageID?: string;
 
     @Column()
     discordGuildID!: string;
@@ -60,12 +63,12 @@ export class Shares extends BaseEntity {
     spotifyId?: string;
 
 
-    public constructor(params?: {message: Message, user: Users, displayTitle?: string, title?: string, artist?: string}) {
+    public constructor(params?: {linkMessage: Message, infoMessage?: Message, user: Users, displayTitle?: string, title?: string, artist?: string}) {
         super();
         if(params && (params.displayTitle || (params.title && params.artist))) {
             this.user = params.user;
-            this.discordMessageID = params.message.id;
-            this.channelName = (params.message.channel as TextChannel).name;
+            this.discordLinkMessageID = params.linkMessage.id;
+            this.channelName = (params.linkMessage.channel as TextChannel).name;
 
             if(params.displayTitle) {
                 this.displayTitle = params.displayTitle;
@@ -76,11 +79,11 @@ export class Shares extends BaseEntity {
                 this.artist = params.artist;
             }
 
-            if(params.message.guildID) {
-                this.discordGuildID = params.message.guildID;
+            if(params.linkMessage.guildID) {
+                this.discordGuildID = params.linkMessage.guildID;
             }
-            else {
-                throw `Share command was sent outside of a text channel: ${params.message.content}`;
+            if(params.infoMessage) {
+                this.discordInfoMessageID = params.infoMessage.id;
             }
 
 

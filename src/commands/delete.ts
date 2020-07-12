@@ -34,8 +34,12 @@ export default class ListCommand extends CommandParams {
         .orderBy('datePosted', 'DESC')
         .getOne();
       if(share) {
-        message.channel.deleteMessage(share.discordMessageID);
-        console.log(share.discordMessageID);
+        message.channel.deleteMessage(share.discordRequestMessageID);
+        message.channel.deleteMessage(share.discordLinkMessageID);
+        if(share.discordInfoMessageID) {
+          message.channel.deleteMessage(share.discordInfoMessageID);
+        }
+        message.channel.deleteMessage(message.id);
 
         if(share.redditPostId) {
           const redditPoster = new RedditPoster(config.reddit);
@@ -43,7 +47,7 @@ export default class ListCommand extends CommandParams {
         }
 
         await Shares.remove(share);
-        console.log(`Deleted ${share.displayTitle}`);
+        return;
       }
       else {
         message.channel.createMessage('You have not shared anything yet.')

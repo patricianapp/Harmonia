@@ -45,25 +45,14 @@ export default class YouTubeCommand extends CommandParams {
                     }
                 },
                 async postCommand(message, args, responseMessage) {
-                    if(responseMessage) {
+                    const newShare = await Shares.findOne({
+                        where: {
+                            discordRequestMessageID: message.id
+                        }
+                    });
+                    if(responseMessage && newShare && newShare.youtubeLink) {
                         const client = responseMessage.channel.client as FMcord;
-                        const videoId = responseMessage.embeds[0].url?.split('//youtu.be/')[1];
-                        if(!videoId) return;
-                        const yt = new YouTubeRequest(client.apikeys.youtube!);
-                        const data = await yt.getVideo(videoId);
-                        const result = data.items[0];
-
-                        // save to database
-                        const newShare = new Shares({
-                            message: responseMessage,
-                            user: await new UserFetcher(message).getAuthor(),
-                            displayTitle: result.snippet.title
-                        });
-                        newShare.mediaType = 'track';
-                        newShare.youtubeTitle = result.snippet.title;
-                        newShare.youtubeLink = `https://youtu.be/${result.id}`;
-                        await newShare.save();
-                        console.log(`Share saved with ID ${newShare.id}`);
+                        newShare.discordInfoMessageID = responseMessage.id;
 
                         // get spotify info
                         const { spotify } = client.apikeys;
@@ -73,7 +62,7 @@ export default class YouTubeCommand extends CommandParams {
                             spotifyQuery = args.join(` `);
                         }
                         else {
-                            spotifyQuery = result.snippet.title;
+                            spotifyQuery = newShare.displayTitle;
                         }
                         const spotifyResult = await lib.findTrack(spotifyQuery);
                         if (spotifyResult.tracks.items[0]) {
@@ -101,8 +90,8 @@ export default class YouTubeCommand extends CommandParams {
                         // post to reddit
                         const reddit = new RedditPoster(config.reddit);
                         const postId = await reddit.post({
-                            title: result.snippet.title,
-                            url: `https://youtu.be/${result.id}`,
+                            title: newShare.displayTitle,
+                            url: newShare.youtubeLink,
                             sr: config.reddit.subredditName
                         }, newShare.channelName);
                         newShare.redditPostLink = `https://reddit.com/r/${config.reddit.subredditName}/comments/${postId}`;
@@ -127,7 +116,7 @@ export default class YouTubeCommand extends CommandParams {
                 type: 'edit',
                 response: async (message: Message) => {
                     const share = await Shares.findOne({
-                        discordMessageID: message.id
+                        discordInfoMessageID: message.id
                     });
                     if(share && share.youtubeLink) {
                         const embed = new ShareEmbedUpdate(message.embeds[0], message, share);
@@ -141,7 +130,7 @@ export default class YouTubeCommand extends CommandParams {
                 type: 'edit',
                 response: async (message: Message) => {
                     const share = await Shares.findOne({
-                        discordMessageID: message.id
+                        discordInfoMessageID: message.id
                     });
                     if(share && share.youtubeLink) {
                         const embed = new ShareEmbedUpdate(message.embeds[0], message, share);
@@ -181,12 +170,22 @@ export default class YouTubeCommand extends CommandParams {
         const data = await yt.search(query);
         const result = data.items[0];
         if (result !== undefined) {
-            await message.channel.createMessage(`${message.author.mention}, result for query \`${query}\`: https://youtu.be/${result.id.videoId}`);
-            const embed = new ShareEmbed(message, `https://youtu.be/${result.id.videoId}`, new Shares({
-                message: message,
+            const linkMessage = await message.channel.createMessage(`${message.author.mention}, result for query \`${query}\`: https://youtu.be/${result.id.videoId}`);
+
+            // save to database
+            const newShare = new Shares({
+                linkMessage,
                 user: await new UserFetcher(message).getAuthor(),
                 displayTitle: result.snippet.title
-            }));
+            });
+            newShare.mediaType = 'track';
+            newShare.discordRequestMessageID = message.id;
+            newShare.youtubeTitle = result.snippet.title;
+            newShare.youtubeLink = `https://youtu.be/${result.id.videoId}`;
+            await newShare.save();
+            console.log(`Share saved with ID ${newShare.id}`);
+
+            const embed = new ShareEmbed(message, newShare.youtubeLink, newShare);
             return { embed };
         } else {
             await message.channel.createMessage(`${message.author.mention}, no results found on query \`${query}\``);
