@@ -12,7 +12,10 @@ export class Shares extends BaseEntity {
     user!: Users;
 
     @Column({ unique: true })
-    discordMessageID!: string;
+    discordLinkMessageID!: string;
+
+    @Column({ unique: true })
+    discordInfoMessageID!: string;
 
     @Column()
     discordGuildID!: string;

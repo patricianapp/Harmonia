@@ -73,16 +73,15 @@ export default class RedditPoster {
 
     }
 
-    // TODO: deletePost
-    public async deletePost(subredditName: string, postId: string) {
-        const res = await axios.post(`${url}/r/${subredditName}/api/del`, stringify({
+    public async deletePost(postId: string) {
+        await this.refreshAccessToken();
+        await axios.post(`${url}/api/del`, stringify({
             id: postId
         }), {
             headers: {
                 Authorization: `Bearer ${this.accessToken}`
             }
         });
-        console.log(res);
     }
 
     // TODO: comment

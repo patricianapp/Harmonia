@@ -35,7 +35,7 @@ export default class ListCommand extends CommandParams {
         const shares = await Shares.find({
             where: {
                 datePosted: MoreThan(lastWeek),
-                guild: message.guildID
+                discordGuildID: message.guildID,
             },
             order: {
                 votes: 'DESC'
