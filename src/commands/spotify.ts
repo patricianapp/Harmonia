@@ -11,6 +11,7 @@ import UserFetcher from "../classes/UserFetcher";
 import YouTubeRequest from "../classes/YouTubeRequest";
 import RedditPoster from "../classes/RedditPoster";
 import config from '../config';
+import ShareEmbed, { ShareEmbedUpdate } from "../classes/ShareEmbed";
 
 export default class SpotifyCommand extends CommandParams {
 
@@ -46,13 +47,16 @@ export default class SpotifyCommand extends CommandParams {
                 },
                 preCommand: StartTyping,
                 async postCommand(message, _args, responseMessage) {
-                    if(message.guildID && (message.channel as TextChannel).name && responseMessage && responseMessage.content.includes('https://open.spotify.com/')) {
+                    if(responseMessage) {
                         const client = responseMessage.channel.client as FMcord;
-                        const trackId = responseMessage.content.split('//open.spotify.com/track/')[1];
+                        const trackId = responseMessage.embeds[0].url?.split('//open.spotify.com/track/')[1];
+                        if(!trackId) return;
                         const { spotify } = client.apikeys;
                         const lib = new Spotify(spotify!.id, spotify!.secret);
                         const track = await lib.findTrackById(trackId)
                         const artists = track.artists.map(artist => artist.name);
+
+                        // TODO: Wrap this in util function
                         let artistStr: string;
                         if(artists.length >  2) {
                             artists[artists.length - 1] = '& ' + artists[artists.length - 1];
@@ -65,45 +69,42 @@ export default class SpotifyCommand extends CommandParams {
                             artistStr = artists[0];
                         }
 
-                        const userFetcher = new UserFetcher(message);
-                        const user = await userFetcher.getAuthor();
-                        if(user !== undefined) {
-                            // save to database
-                            const newShare = new Shares();
-                            newShare.user = user;
-                            newShare.discordMessageID = responseMessage.id;
-                            newShare.discordGuildID = message.guildID;
-                            newShare.channelName = (message.channel as TextChannel).name;
-                            newShare.mediaType = 'track';
-                            newShare.title = track.name;
-                            newShare.artist = artistStr;
-                            newShare.spotifyLink = track.external_urls.spotify;
-                            newShare.displayTitle = `${track.artists[0].name} - ${track.name}`;
+                        // save to database
+                        const newShare = new Shares({
+                            message: responseMessage,
+                            user: await new UserFetcher(message).getAuthor(),
+                            artist: track.artists[0].name,
+                            title: track.name
+                        });
+                        newShare.mediaType = 'track';
+                        newShare.spotifyLink = track.external_urls.spotify;
+                        await newShare.save();
+                        console.log(`Share saved with ID ${newShare.id}`);
+
+                        // get youtube info
+                        const yt = new YouTubeRequest(client.apikeys.youtube!);
+                        const data = await yt.search(`${track.artists[0].name} ${track.name}`);
+                        const result = data.items[0];
+                        if (result !== undefined) {
+                            newShare.youtubeLink = `https://youtu.be/${result.id.videoId}`;
                             await newShare.save();
-                            console.log(`Share saved with ID ${newShare.id}`);
-
-                            // get youtube info
-                            const yt = new YouTubeRequest(client.apikeys.youtube!);
-                            const data = await yt.search(`${track.artists[0].name} ${track.name}`);
-                            const result = data.items[0];
-                            if (result !== undefined) {
-                                newShare.youtubeLink = `https://youtu.be/${result.id.videoId}`;
-                                await newShare.save();
-                            }
-
-                            // post to reddit
-                            const reddit = new RedditPoster(config.reddit);
-                            const postId = await reddit.post({
-                                title: `${artistStr} - ${track.name}`,
-                                url: track.external_urls.spotify,
-                                sr: config.reddit.subredditName
-                            }, newShare.channelName);
-                            newShare.redditPostLink = `https://reddit.com/r/${config.reddit.subredditName}/comments/${postId}`;
-                            newShare.redditPostId = `t3_${postId}`;
-                            newShare.save();
-
-                            // TODO: update response message
                         }
+
+                        // post to reddit
+                        const reddit = new RedditPoster(config.reddit);
+                        const postId = await reddit.post({
+                            title: `${artistStr} - ${track.name}`,
+                            url: track.external_urls.spotify,
+                            sr: config.reddit.subredditName
+                        }, newShare.channelName);
+                        newShare.redditPostLink = `https://reddit.com/r/${config.reddit.subredditName}/comments/${postId}`;
+                        newShare.redditPostId = `t3_${postId}`;
+                        newShare.save();
+
+                        // update response message
+                        const embed = new ShareEmbed(message, newShare.spotifyLink, newShare);
+                        await embed.update(responseMessage);
+                        responseMessage.edit({ embed });
                     }
                 }
             },
@@ -121,10 +122,25 @@ export default class SpotifyCommand extends CommandParams {
                     const share = await Shares.findOne({
                         discordMessageID: message.id
                     });
-                    if(share) {
-                        share.votes++;
-                        share.save();
+                    if(share && share.youtubeLink) {
+                        const embed = new ShareEmbedUpdate(message.embeds[0], message, share);
+                        return { embed: await embed.getEmbed() };
                     }
+                    return message;
+                }
+            },
+            {
+                emoji: '🔄',
+                type: 'edit',
+                response: async (message: Message) => {
+                    const share = await Shares.findOne({
+                        discordMessageID: message.id
+                    });
+                    if(share && share.youtubeLink) {
+                        const embed = new ShareEmbedUpdate(message.embeds[0], message, share);
+                        return { embed: await embed.getEmbed() };
+                    }
+                    return message;
                 }
             }],
             reactionButtonTimeout: 604800
@@ -136,9 +152,18 @@ export default class SpotifyCommand extends CommandParams {
         const { spotify } = client.apikeys;
         const lib = new Spotify(spotify!.id, spotify!.secret);
         if (args.length) {
-            const track = await lib.findTrack(args.join(` `));
-            if (track.tracks.items[0]) {
-                return track.tracks.items[0].external_urls.spotify;
+            const result = await lib.findTrack(args.join(` `));
+            if (result.tracks.items[0]) {
+                    const track = result.tracks.items[0];
+
+                    await message.channel.createMessage(track.external_urls.spotify);
+                    const embed = new ShareEmbed(message, track.external_urls.spotify, new Shares({
+                        message: message,
+                        user: await new UserFetcher(message).getAuthor(),
+                        artist: track.artists[0].name,
+                        title: track.name
+                    }));
+                    return { embed };
             } else {
                 await message.channel.createMessage(`${message.author.mention}, nothing found when looking for \`${args.join(` `)}\``);
             }
@@ -149,9 +174,17 @@ export default class SpotifyCommand extends CommandParams {
                 song = await trackFetcher.getLatestTrack();
             }
             if (song) {
-                const track = await lib.findTrack(`${song.name} ${song.artist[`#text`]}`);
-                if (track.tracks.items[0]) {
-                    return track.tracks.items[0].external_urls.spotify;
+                const result = await lib.findTrack(`${song.name} ${song.artist[`#text`]}`);
+                if (result.tracks.items[0]) {
+                    const track = result.tracks.items[0];
+                    await message.channel.createMessage(`${track.external_urls.spotify}`);
+                    const embed = new ShareEmbed(message, track.external_urls.spotify, new Shares({
+                        message: message,
+                        user: await new UserFetcher(message).getAuthor(),
+                        artist: track.artists[0].name,
+                        title: track.name
+                    }));
+                    return { embed };
                 } else {
                     await message.channel.createMessage(`${message.author.mention}, your listened track wasn't found on Spotify.`);
                 }

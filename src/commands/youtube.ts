@@ -12,6 +12,8 @@ import { Shares } from "../entities/Shares";
 import Spotify from "../lib/spotify";
 import RedditPoster from "../classes/RedditPoster";
 import config from '../config';
+import ShareEmbed, { ShareEmbedUpdate } from "../classes/ShareEmbed";
+import { Users } from "../entities/Users";
 
 export default class YouTubeCommand extends CommandParams {
 
@@ -43,69 +45,75 @@ export default class YouTubeCommand extends CommandParams {
                     }
                 },
                 async postCommand(message, args, responseMessage) {
-                    if(message.guildID && (message.channel as TextChannel).name && responseMessage && responseMessage.content.includes('https://youtu.be/')) {
+                    if(responseMessage) {
                         const client = responseMessage.channel.client as FMcord;
-                        const videoId = responseMessage.content.split('//youtu.be/')[1];
+                        const videoId = responseMessage.embeds[0].url?.split('//youtu.be/')[1];
+                        if(!videoId) return;
                         const yt = new YouTubeRequest(client.apikeys.youtube!);
                         const data = await yt.getVideo(videoId);
                         const result = data.items[0];
 
-                        const userFetcher = new UserFetcher(message);
-                        const user = await userFetcher.getAuthor();
-                        if(user !== undefined) {
-                            // save to database
-                            const newShare = new Shares();
-                            newShare.user = user;
-                            newShare.discordMessageID = responseMessage.id;
-                            newShare.discordGuildID = message.guildID;
-                            newShare.channelName = (message.channel as TextChannel).name;
-                            newShare.mediaType = 'track';
-                            newShare.displayTitle = result.snippet.title;
-                            newShare.youtubeTitle = result.snippet.title;
-                            newShare.youtubeLink = `https://youtu.be/${result.id}`;
-                            await newShare.save();
-                            console.log(`Share saved with ID ${newShare.id}`);
+                        // save to database
+                        const newShare = new Shares({
+                            message: responseMessage,
+                            user: await new UserFetcher(message).getAuthor(),
+                            displayTitle: result.snippet.title
+                        });
+                        newShare.mediaType = 'track';
+                        newShare.youtubeTitle = result.snippet.title;
+                        newShare.youtubeLink = `https://youtu.be/${result.id}`;
+                        await newShare.save();
+                        console.log(`Share saved with ID ${newShare.id}`);
 
-                            // get spotify info
-                            const { spotify } = client.apikeys;
-                            const lib = new Spotify(spotify!.id, spotify!.secret);
-                            const spotifyResult = await lib.findTrack(args.join(` `))
-                            if (spotifyResult.tracks.items[0]) {
-                                const spotifyTrack = spotifyResult.tracks.items[0];
-                                const artists = spotifyTrack.artists.map(artist => artist.name);
-                                let artistStr: string;
-                                if(artists.length >  2) {
-                                    artists[artists.length - 1] = '& ' + artists[artists.length - 1];
-                                    artistStr = artists.join(', ')
-                                }
-                                else if (artists.length === 2) {
-                                    artistStr = artists.join(' & ')
-                                }
-                                else {
-                                    artistStr = artists[0];
-                                }
-
-                                newShare.spotifyLink = spotifyTrack.external_urls.spotify;
-                                newShare.title = spotifyTrack.name;
-                                newShare.artist = artistStr;
-                                newShare.displayTitle = `${spotifyTrack.artists[0].name} - ${spotifyTrack.name}`;
-                                await newShare.save();
+                        // get spotify info
+                        const { spotify } = client.apikeys;
+                        const lib = new Spotify(spotify!.id, spotify!.secret);
+                        let spotifyQuery: string;
+                        if(args.length > 0) {
+                            spotifyQuery = args.join(` `);
+                        }
+                        else {
+                            spotifyQuery = result.snippet.title;
+                        }
+                        const spotifyResult = await lib.findTrack(spotifyQuery);
+                        if (spotifyResult.tracks.items[0]) {
+                            const spotifyTrack = spotifyResult.tracks.items[0];
+                            const artists = spotifyTrack.artists.map(artist => artist.name);
+                            let artistStr: string;
+                            if(artists.length >  2) {
+                                artists[artists.length - 1] = '& ' + artists[artists.length - 1];
+                                artistStr = artists.join(', ')
+                            }
+                            else if (artists.length === 2) {
+                                artistStr = artists.join(' & ')
+                            }
+                            else {
+                                artistStr = artists[0];
                             }
 
-                            // post to reddit
-                            const reddit = new RedditPoster(config.reddit);
-                            const postId = await reddit.post({
-                                title: result.snippet.title,
-                                url: `https://youtu.be/${result.id}`,
-                                sr: config.reddit.subredditName
-                            }, newShare.channelName);
-                            newShare.redditPostLink = postId;
-                            newShare.save();
-
-                            // TODO: add flair based on channel name
-
-                            // TODO: update response message
+                            newShare.spotifyLink = spotifyTrack.external_urls.spotify;
+                            newShare.title = spotifyTrack.name;
+                            newShare.artist = artistStr;
+                            newShare.displayTitle = `${spotifyTrack.artists[0].name} - ${spotifyTrack.name}`;
+                            await newShare.save();
                         }
+
+                        // post to reddit
+                        const reddit = new RedditPoster(config.reddit);
+                        const postId = await reddit.post({
+                            title: result.snippet.title,
+                            url: `https://youtu.be/${result.id}`,
+                            sr: config.reddit.subredditName
+                        }, newShare.channelName);
+                        newShare.redditPostLink = `https://reddit.com/r/${config.reddit.subredditName}/comments/${postId}`;
+                        newShare.redditPostId = `t3_${postId}`;
+
+                        newShare.save();
+
+                        // update response message
+                        const embed = new ShareEmbed(message, newShare.youtubeLink, newShare);
+                        await embed.update(responseMessage);
+                        responseMessage.edit({ embed });
                     }
                 }
             },
@@ -121,12 +129,28 @@ export default class YouTubeCommand extends CommandParams {
                     const share = await Shares.findOne({
                         discordMessageID: message.id
                     });
-                    if(share) {
-                        share.votes++;
-                        share.save();
+                    if(share && share.youtubeLink) {
+                        const embed = new ShareEmbedUpdate(message.embeds[0], message, share);
+                        return { embed: await embed.getEmbed() };
                     }
+                    return message;
                 }
-            }],
+            },
+            {
+                emoji: '🔄',
+                type: 'edit',
+                response: async (message: Message) => {
+                    const share = await Shares.findOne({
+                        discordMessageID: message.id
+                    });
+                    if(share && share.youtubeLink) {
+                        const embed = new ShareEmbedUpdate(message.embeds[0], message, share);
+                        return { embed: await embed.getEmbed() };
+                    }
+                    return message;
+                }
+            }
+            ],
             reactionButtonTimeout: 604800
         });
     }
@@ -157,7 +181,13 @@ export default class YouTubeCommand extends CommandParams {
         const data = await yt.search(query);
         const result = data.items[0];
         if (result !== undefined) {
-            return `${message.author.mention}, result for query \`${query}\`: https://youtu.be/${result.id.videoId}`;
+            await message.channel.createMessage(`${message.author.mention}, result for query \`${query}\`: https://youtu.be/${result.id.videoId}`);
+            const embed = new ShareEmbed(message, `https://youtu.be/${result.id.videoId}`, new Shares({
+                message: message,
+                user: await new UserFetcher(message).getAuthor(),
+                displayTitle: result.snippet.title
+            }));
+            return { embed };
         } else {
             await message.channel.createMessage(`${message.author.mention}, no results found on query \`${query}\``);
         }

@@ -19,8 +19,13 @@ export default class UserFetcher {
         return user;
     }
 
-    public async getAuthor(): Promise<Users | undefined> {
-        const author: Users | undefined = await UserFetcher.getByID(this.message.author.id);
+    public async getAuthor(): Promise<Users> {
+        let author: Users | undefined = await UserFetcher.getByID(this.message.author.id);
+        if(!author) {
+            const newUser = new Users();
+            newUser.discordUserID = this.message.author.id;
+            author = await newUser.save();
+        }
         return author;
     }
 

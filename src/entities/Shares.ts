@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, BaseEntity, ManyToMany, Check, CreateDateColumn, JoinTable, ManyToOne } from "typeorm";
 import { Users } from "./Users";
+import { Message, TextChannel } from "eris";
 
 @Entity(`shares`)
 export class Shares extends BaseEntity {
@@ -54,4 +55,32 @@ export class Shares extends BaseEntity {
 
     @Column({ nullable: true })
     spotifyId?: string;
+
+
+    public constructor(params?: {message: Message, user: Users, displayTitle?: string, title?: string, artist?: string}) {
+        super();
+        if(params && (params.displayTitle || (params.title && params.artist))) {
+            this.user = params.user;
+            this.discordMessageID = params.message.id;
+            this.channelName = (params.message.channel as TextChannel).name;
+
+            if(params.displayTitle) {
+                this.displayTitle = params.displayTitle;
+            }
+            else {
+                this.displayTitle = `${params.artist} - ${params.title}`;
+                this.title = params.title;
+                this.artist = params.artist;
+            }
+
+            if(params.message.guildID) {
+                this.discordGuildID = params.message.guildID;
+            }
+            else {
+                throw `Share command was sent outside of a text channel: ${params.message.content}`;
+            }
+
+
+        }
+    }
 }

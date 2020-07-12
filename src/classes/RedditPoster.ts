@@ -62,14 +62,14 @@ export default class RedditPoster {
         return postId;
     }
 
-    // TODO: getVotes
-    public async getVotes(subredditName: string, postId: string) {
-        const result = (await axios.get(`${url}/r/${subredditName}/api/info?id=${postId}`, {
+    // TODO: type Reddit post
+    public async getPost(link: string): Promise<any> {
+        const result = (await axios.get(`${link}.json`, {
             headers: {
                 Authorization: `Bearer ${this.accessToken}`
             }
-        })).data;
-        console.log(result);
+        })).data[0].data.children[0].data;
+        return result;
 
     }
 

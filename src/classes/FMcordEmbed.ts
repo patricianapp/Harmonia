@@ -24,6 +24,11 @@ export default class FMcordEmbed implements Embed {
         height?: number;
         width?: number;
     };
+    public video?: {
+        url?: string;
+        height?: number;
+        width?: number;
+    }
     public fields: Array<{
         name: string;
         value: string;
@@ -63,7 +68,7 @@ export default class FMcordEmbed implements Embed {
         this.title = title;
         return this;
     }
-    
+
     public setColor(color: number): this {
         this.color = color;
         return this;
@@ -81,6 +86,11 @@ export default class FMcordEmbed implements Embed {
 
     public setURL(url: string): this {
         this.url = url;
+        return this;
+    }
+
+    public setVideo(url: string): this {
+        this.video = { url };
         return this;
     }
 
