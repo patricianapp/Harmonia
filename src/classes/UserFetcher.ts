@@ -2,7 +2,7 @@ import { Message } from "eris";
 import { Users } from "../entities/Users";
 import { Modes } from "../entities/Modes";
 import NowPlayingMode from "../enums/NowPlayingMode";
-import { GuildModes } from "../entities/GuildModes";
+import { Guilds } from "../entities/Guilds";
 
 export default class UserFetcher {
 
@@ -48,7 +48,7 @@ export default class UserFetcher {
     }
 
     private async guildMode(): Promise<NowPlayingMode | undefined> {
-        const guildMode = await GuildModes.findOne({
+        const guildMode = await Guilds.findOne({
             discordID: this.message.member?.guild.id
         });
         return guildMode?.nowPlayingMode;

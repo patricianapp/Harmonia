@@ -9,8 +9,8 @@ export default {
     `login <lastfm username>\` to be able to use this command!`,
     error: `There was an error trying to execute the ` +
     `command. Please try again later.`,
-    github: `https://github.com/patricianapp/fmcord`,
-    getSource: (cmd: string) => `https://github.com/patricianapp/fmcord/blob/master/src/commands/${cmd}.ts`,
+    github: `https://github.com/patricianapp/Harmonia`,
+    getSource: (cmd: string) => `https://github.com/patricianapp/Harmonia/blob/master/src/commands/${cmd}.ts`,
     notPlaying: `currently, you're not listening to anything.`,
     npNoLogin: `you haven't registered your Last.fm ` +
     `account, therefore, I can't check what you're listening to. To set ` +

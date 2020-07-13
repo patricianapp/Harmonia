@@ -5,14 +5,15 @@ import PostCheck from "../hooks/PostCheck";
 import NotDisabled from "../checks/NotDisabled";
 import { Users } from "../entities/Users";
 import { FindConditions } from "typeorm";
+import { Guilds } from "../entities/Guilds";
 
 export default class ExportCommand extends CommandParams {
 
     public constructor() {
         super(`export`, {
-            description: `Exports a list of users in your server.`,
+            description: `Exports guild settings and a list of users.`,
             usage: `export`,
-            fullDescription: `The list is exported in JSON format as ` +
+            fullDescription: `The user list is exported in JSON format as ` +
             `an array of objects with discordUserID and lastFMUsername ` +
             `as their properties.\n` +
             `This command requires Manage Server permission. Can be overriden ` +
@@ -43,13 +44,21 @@ export default class ExportCommand extends CommandParams {
                     discordUserID: user.discordUserID,
                     lastFMUsername: user.lastFMUsername
                 });
-            } 
+            }
         }
+        const guild = await Guilds.findOne({
+            discordID: message.guildID
+        });
+        const result = {
+            users,
+            guildSettings: guild ? guild.guildSettings : {}
+        }
+
         const dmChannel = await message.author.getDMChannel();
         await message.channel.createMessage(`${message.author.mention}, check your DMs!`);
         await dmChannel.createMessage(``, {
-            file: JSON.stringify(users, null, 4),
-            name: `users_${message.member!.guild.name}_UTC-${new Date().toISOString()}.json`
+            file: JSON.stringify(result, null, 4),
+            name: `guild_${message.member!.guild.name}_UTC-${new Date().toISOString()}.json`
         });
     }
 

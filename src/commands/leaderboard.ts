@@ -31,7 +31,6 @@ export default class ListCommand extends CommandParams {
         const lastWeek = new Date();
         lastWeek.setDate(lastWeek.getDate() - 7);
 
-        // TODO: Limit to guild
         const shares = await Shares.find({
             where: {
                 datePosted: MoreThan(lastWeek),

@@ -8,6 +8,8 @@ import fs from "fs";
 import * as path from "path";
 import { getConnection } from "typeorm";
 import { Users } from "../entities/Users";
+import AddGuild from "../utils/AddGuild";
+import { GuildSettings } from "../entities/Guilds";
 
 function downloadFile(message: Message, filePath: string): Promise<void> {
     const stream = fs.createWriteStream(filePath);
@@ -28,11 +30,10 @@ interface LoginCredentials {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isValidFormat(format: any): format is LoginCredentials[] {
+function isValidFormat(format: any): format is Array<LoginCredentials> {
     return format?.every?.(
-        (x: Record<string, string>) => 
-            typeof x?.discordUserID === `string` && 
-            typeof x?.lastFMUsername === `string`
+        (x: Record<string, string>) =>
+            typeof x?.discordUserID === `string`
     );
 }
 
@@ -40,7 +41,7 @@ export default class ImportCommand extends CommandParams {
 
     public constructor() {
         super(`import`, {
-            description: `Imports all your users from a JSON file.`,
+            description: `Imports all your users and guild settings from a JSON file.`,
             usage: `import`,
             fullDescription: `Compatible with Chuu and .fmbot's user imports. ` +
             `Users that are already in the database are skipped.\n` +
@@ -80,8 +81,11 @@ export default class ImportCommand extends CommandParams {
     public async execute(message: Message): Promise<void> {
         const filePath = path.join(__dirname, message.attachments[0].filename);
         await downloadFile(message, filePath);
+        const importData = require(filePath);
+
+        // For compatibility with Chuu and .fmbot
+        const users = Array.isArray(importData) ? importData : importData.users;
         try {
-            const users = require(filePath);
             if (isValidFormat(users)) {
                 const allUsers = await Users.find();
                 const IDs = allUsers.map(x => x.discordUserID);
@@ -95,7 +99,6 @@ export default class ImportCommand extends CommandParams {
                         .values(filteredUsers)
                         .execute();
                     await message.channel.createMessage(`${message.author.mention}, user import has succeeded!`);
-                    fs.unlinkSync(filePath); 
                 } else {
                     await message.channel.createMessage(`${message.author.mention}, all the users from the file are already in my database. No changes were made.`);
                 }
@@ -103,13 +106,20 @@ export default class ImportCommand extends CommandParams {
                 await message.channel.createMessage(`${message.author.mention}, your JSON file is of incorrect format! No changes were made.`);
             }
         } catch (e) {
-            fs.unlinkSync(filePath);
             if (e instanceof SyntaxError) {
                 await message.channel.createMessage(`${message.author.mention}, broken JSON file was provided. No changes were made.`);
             } else {
                 console.error(e);
             }
         }
+
+        if(message.guildID && importData.guildSettings) {
+            const guild = await AddGuild(message.guildID);
+            guild.guildSettings = importData.guildSettings;
+            await guild.save();
+            await message.channel.createMessage(`${message.author.mention}, guild settings updated.`);
+        }
+        fs.unlinkSync(filePath);
     }
-    
+
 }

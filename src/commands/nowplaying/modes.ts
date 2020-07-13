@@ -6,7 +6,7 @@ import NowPlayingMode from "../../enums/NowPlayingMode";
 import UserFetcher from "../../classes/UserFetcher";
 import { Modes } from "../../entities/Modes";
 import FMcordEmbed from "../../classes/FMcordEmbed";
-import { GuildModes } from "../../entities/GuildModes";
+import { Guilds } from "../../entities/Guilds";
 import UsernameAndNotDisabled from "../../checks/UsernameAndNotDisabled";
 
 export default class ModesSubcommand extends CommandParams {
@@ -35,13 +35,13 @@ export default class ModesSubcommand extends CommandParams {
         const userMode = await Modes.findOne({
             user
         });
-        
+
         const uMode = userMode ? modes.get(userMode.nowPlayingMode) : `full`;
         const embed = new FMcordEmbed(message)
             .setTitle(`User and guild nowplaying modes`)
             .addField(`Your mode`, String(uMode), true);
         if (message.member !== null) {
-            const guildMode = await GuildModes.findOne({
+            const guildMode = await Guilds.findOne({
                 discordID: message.member!.guild.id
             });
             const gMode = guildMode ? modes.get(guildMode.nowPlayingMode) : `full`;

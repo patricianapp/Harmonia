@@ -5,8 +5,9 @@ import { Message } from "eris";
 import NowPlayingMode from "../../enums/NowPlayingMode";
 import UserFetcher from "../../classes/UserFetcher";
 import { Modes } from "../../entities/Modes";
-import { GuildModes } from "../../entities/GuildModes";
+import { Guilds } from "../../entities/Guilds";
 import UsernameAndNotDisabled from "../../checks/UsernameAndNotDisabled";
+import AddGuild from "../../utils/AddGuild";
 
 export default class SetModeSubcommand extends CommandParams {
 
@@ -48,7 +49,7 @@ export default class SetModeSubcommand extends CommandParams {
         const mode = await Modes.findOne({
             user
         });
-        const guildMode = await GuildModes.findOne({
+        const guildMode = await Guilds.findOne({
             discordID: message.member!.guild.id
         });
         if (modes.has(args[0].toLowerCase())) {
@@ -71,12 +72,15 @@ export default class SetModeSubcommand extends CommandParams {
             if (modes.has(modeArg)) {
                 const settable = (modes.get(modeArg))!;
                 if (guildMode === undefined) {
-                    const newMode = new GuildModes();
-                    newMode.discordID = message.member!.guild.id;
+                    console.log('Adding guild...');
+                    const newMode = await AddGuild(message.member!.guild.id)
                     newMode.nowPlayingMode = settable;
+                    newMode.guildSettings.nowPlayingMode = settable;
                     await newMode.save();
+                    console.log('Guild added');
                 } else {
                     guildMode.nowPlayingMode = settable;
+                    guildMode.guildSettings.nowPlayingMode = settable;
                     await guildMode.save();
                 }
                 await message.channel.createMessage(`${message.author.mention}, guild mode was set to \`${[...modes.keys()].find(x => x.startsWith(modeArg))}\` succesfully!`);
