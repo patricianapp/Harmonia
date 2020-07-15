@@ -2,12 +2,14 @@ import { BaseEntity, Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 import NowPlayingMode from "../enums/NowPlayingMode";
 
 export interface GuildSettings {
+    prefix: string;
     nowPlayingMode: NowPlayingMode
     reddit: {
         auth?: {
             bearerToken?: string;
-            bearerTokenDate: Date;
+            bearerTokenDate?: Date;
             refreshToken?: string;
+            authorizationId?: string;
         }
         subredditName?: string;
         autoFlair: boolean;
@@ -27,12 +29,11 @@ export interface GuildSettings {
             refreshToken?: string;
         }
         playlist?: {
+            frequency: string;
             playlistId?: string;
             albumPlaylistId?: string;
             amountOfTracks?: number; // if undefined, posts all tracks every week
             alwaysKeepAmount: boolean; // keep some of last week's tracks if there aren't enough
-
-
         }
     }
 }

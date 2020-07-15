@@ -10,6 +10,7 @@ export default async (discordID: string): Promise<Guilds> => {
     guild = new Guilds();
     guild.discordID = discordID;
     guild.guildSettings = {
+        prefix: '&',
         nowPlayingMode: NowPlayingMode.FULL,
         reddit: {
             autoFlair: true,

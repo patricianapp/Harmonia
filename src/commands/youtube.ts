@@ -14,6 +14,7 @@ import RedditPoster from "../classes/RedditPoster";
 import config from '../config';
 import ShareEmbed, { ShareEmbedUpdate } from "../classes/ShareEmbed";
 import { Users } from "../entities/Users";
+import { Guilds } from "../entities/Guilds";
 
 export default class YouTubeCommand extends CommandParams {
 
@@ -88,15 +89,14 @@ export default class YouTubeCommand extends CommandParams {
                         }
 
                         // post to reddit
-                        const reddit = new RedditPoster(config.reddit);
+                        const guild = await Guilds.findOneOrFail({discordID: message.guildID});
+                        const reddit = new RedditPoster(guild.guildSettings.reddit);
                         const postId = await reddit.post({
                             title: newShare.displayTitle,
                             url: newShare.youtubeLink,
-                            sr: config.reddit.subredditName
                         }, newShare.channelName);
-                        newShare.redditPostLink = `https://reddit.com/r/${config.reddit.subredditName}/comments/${postId}`;
+                        newShare.redditPostLink = `https://reddit.com/r/${guild.guildSettings.reddit.subredditName}/comments/${postId}`;
                         newShare.redditPostId = `t3_${postId}`;
-
                         newShare.save();
 
                         // update response message

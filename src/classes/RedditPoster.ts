@@ -1,50 +1,56 @@
 import { stringify } from "querystring";
 import axios from "axios";
+import config from '../config';
 
 const url = `https://oauth.reddit.com/`;
 
 export default class RedditPoster {
 
-    private readonly username: string;
-    private readonly password: string;
-    private readonly clientKey: string;
-    private readonly secret: string;
-
-    private accessToken: string;
-
     // type credentials once we know for sure what our auth method is
-    public constructor(credentials: any) {
-      this.username = credentials.username;
-      this.password = credentials.password;
-      this.clientKey = credentials.clientKey;
-      this.secret = credentials.secret;
-      this.accessToken = '';
+    public constructor(private redditConfig: any) {
     }
 
     public async refreshAccessToken() {
-        this.accessToken = (await axios.post('https://www.reddit.com/api/v1/access_token', stringify({
-            grant_type: 'password',
-            username: this.username,
-            password: this.password,
+        // TODO: If new Date() - auth.bearerTokenDate = 1 hr, getBearerToken()
+
+        // this.accessToken = (await axios.post('https://www.reddit.com/api/v1/access_token', stringify({
+        //     grant_type: 'password',
+        //     username: this.username,
+        //     password: this.password,
+        // }), {
+        //     auth: {
+        //         username: this.clientKey,
+        //         password: this.secret
+        //     }
+        // })).data.access_token;
+    }
+
+    public static async getBearerToken(code: string, redirect_uri: string) {
+        const result = (await axios.post('https://www.reddit.com/api/v1/access_token', stringify({
+            grant_type: 'authorization_code',
+            code,
+            redirect_uri,
         }), {
             auth: {
-                username: this.clientKey,
-                password: this.secret
+                username: config.reddit.clientId,
+                password: config.reddit.secret,
             }
-        })).data.access_token;
+        })).data;
+        return result;
     }
 
     // TODO: Type post options
     public async post(options: any, channelName: string) {
-        await this.refreshAccessToken() // TODO: Timeout
-        const autoFlair = true;
+        await this.refreshAccessToken();
         let flair_id = await this.getFlairId(options.sr, channelName);
         if(flair_id === undefined) {
-            if(autoFlair) {
+            console.log('No flair matches this channel name.');
+            if(this.redditConfig.autoFlair) {
                 flair_id = await this.addNewFlair(options.sr, channelName);
+                console.log(`Flair ${channelName} added.`)
             }
             else {
-                console.log('No flair matches this channel name. Will not post.')
+                console.log('Auto-flair is off. Will not post.')
                 return;
             }
         }
@@ -53,24 +59,28 @@ export default class RedditPoster {
             resubmit: true,
             api_type: 'json',
             flair_id,
+            sr: this.redditConfig.subredditName,
             ...options
         }), {
             headers: {
-                Authorization: `Bearer ${this.accessToken}`
+                Authorization: `Bearer ${this.redditConfig.auth.bearerToken}`
             }
         })).data.json.data.id;
+
         return postId;
     }
 
     // TODO: type Reddit post
-    public async getPost(link: string): Promise<any> {
-        const result = (await axios.get(`${link}.json`, {
+    public async getPost(postId: string): Promise<any> {
+        await this.refreshAccessToken();
+        const result = (await axios.get(`${url}/r/${this.redditConfig.subredditName}/api/info?id=${postId}`, {
             headers: {
-                Authorization: `Bearer ${this.accessToken}`
+                Authorization: `Bearer ${this.redditConfig.auth.bearerToken}`
             }
-        })).data[0].data.children[0].data;
-        return result;
-
+        })).data;
+        console.log(postId);
+        console.log(result);
+        return result.data.children[0].data;
     }
 
     public async deletePost(postId: string) {
@@ -79,35 +89,37 @@ export default class RedditPoster {
             id: postId
         }), {
             headers: {
-                Authorization: `Bearer ${this.accessToken}`
+                Authorization: `Bearer ${this.redditConfig.auth.bearerToken}`
             }
         });
     }
 
     // TODO: comment
     public async comment(subredditName: string, postId: string, text: string) {
-        const res = await axios.post(`${url}/r/${subredditName}/api/comment`, stringify({
+        await this.refreshAccessToken();
+        const res = await axios.post(`${url}/r/${this.redditConfig.subredditName}/api/comment`, stringify({
             api_type: 'json',
             thing_id: postId,
             text
         }), {
             headers: {
-                Authorization: `Bearer ${this.accessToken}`
+                Authorization: `Bearer ${this.redditConfig.auth.bearerToken}`
             }
         });
         console.log(res);
     }
 
     public async getFlairId(subredditName: string, flairName: string): Promise<string | undefined> {
-        const flairs = await this.getSubredditFlairs(subredditName);
+        const flairs = await this.getSubredditFlairs(this.redditConfig.subredditName);
         return flairs.find(flair => flair.text === flairName)?.id;
     }
 
     public async getSubredditFlairs(subredditName: string): Promise<Array<any>> { // TODO: Type flair response
+        await this.refreshAccessToken();
         try {
-            const result = (await axios.get(`${url}/r/${subredditName}/api/link_flair_v2`, {
+            const result = (await axios.get(`${url}/r/${this.redditConfig.subredditName}/api/link_flair_v2`, {
                 headers: {
-                    Authorization: `Bearer ${this.accessToken}`
+                    Authorization: `Bearer ${this.redditConfig.auth.bearerToken}`
                 }
             })).data;
             return result;
@@ -119,19 +131,20 @@ export default class RedditPoster {
     }
 
     public async addNewFlair(subredditName: string, text: string): Promise<string> {
-        const res = await axios.post(`${url}/r/${subredditName}/api/flairtemplate`, stringify({
+        await this.refreshAccessToken();
+        const res = await axios.post(`${url}/r/${this.redditConfig.subredditName}/api/flairtemplate`, stringify({
             api_type: 'json',
             flair_type: 'LINK_FLAIR',
             text,
         }), {
             headers: {
-                Authorization: `Bearer ${this.accessToken}`
+                Authorization: `Bearer ${this.redditConfig.auth.bearerToken}`
             }
         })
         if(res.status === 200) {
-            const flairId = await this.getFlairId(subredditName, text);
+            const flairId = await this.getFlairId(this.redditConfig.subredditName, text);
             if(flairId === undefined) {
-                throw `Failed to add flair ${text} to ${subredditName}`;
+                throw `Failed to add flair ${text} to ${this.redditConfig.subredditName}`;
             }
             return flairId;
         }

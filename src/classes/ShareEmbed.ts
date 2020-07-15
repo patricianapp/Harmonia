@@ -3,11 +3,13 @@ import { Message, Command, Embed } from "eris";
 import { Shares } from "../entities/Shares";
 import RedditPoster from "./RedditPoster";
 import config from "../config";
+import { Guilds } from "../entities/Guilds";
 
-async function addRedditInfo(embed: FMcordEmbed | ShareEmbedUpdate, share: Shares, embedMessage?: Message) {
+async function addRedditInfo(embed: FMcordEmbed | ShareEmbedUpdate, share: Shares, redditConfig: any, embedMessage?: Message) {
     if(share.redditPostLink && share.redditPostId) {
-        const redditPoster = new RedditPoster(config.reddit);
-        const post = await redditPoster.getPost(share.redditPostLink);
+
+        const redditPoster = new RedditPoster(redditConfig);
+        const post = await redditPoster.getPost(share.redditPostId);
         let votes = post.score;
         if(embedMessage && embedMessage.reactions['🤘']) {
             votes += (embedMessage.reactions['🤘'].count - 1);
@@ -24,11 +26,13 @@ async function addRedditInfo(embed: FMcordEmbed | ShareEmbedUpdate, share: Share
 
 export default class ShareEmbed extends FMcordEmbed {
 
+    private message: Message;
     private share: Shares;
     private embedMessage?: Message;
 
     public constructor(message: Message, link: string, share: Shares) {
         super(message);
+        this.message = message;
         this.share = share;
 
         this.setTitle(share.displayTitle)
@@ -41,7 +45,8 @@ export default class ShareEmbed extends FMcordEmbed {
         if(embedMessage) {
             this.embedMessage = embedMessage;
         }
-        await addRedditInfo(this, this.share, this.embedMessage);
+        const { guildSettings } = await Guilds.findOneOrFail({discordID: this.message.guildID});
+        await addRedditInfo(this, this.share, guildSettings.reddit, this.embedMessage);
     }
 
 
@@ -58,7 +63,8 @@ export class ShareEmbedUpdate {
     }
 
     public async update() {
-        await addRedditInfo(this, this.share, this.embedMessage);
+        const { guildSettings } = await Guilds.findOneOrFail({discordID: this.embedMessage.guildID});
+        await addRedditInfo(this, this.share, guildSettings.reddit, this.embedMessage);
     }
 
     public async getEmbed(): Promise<Embed> {
