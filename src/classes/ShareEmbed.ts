@@ -4,24 +4,34 @@ import { Shares } from "../entities/Shares";
 import RedditPoster from "./RedditPoster";
 import config from "../config";
 import { Guilds } from "../entities/Guilds";
+import FMcord from "../handler/FMcord";
 
-async function addRedditInfo(embed: FMcordEmbed | ShareEmbedUpdate, share: Shares, redditConfig: any, embedMessage?: Message) {
+async function addRedditInfo(embed: FMcordEmbed | ShareEmbedUpdate, share: Shares, redditConfig: any, embedMessage: Message) {
+    let votes = 0;
+    if(embedMessage && embedMessage.reactions['🤘']) {
+        votes += (embedMessage.reactions['🤘'].count - 1);
+    }
+
     if(share.redditPostLink && share.redditPostId) {
-
         const redditPoster = new RedditPoster(redditConfig);
         const post = await redditPoster.getPost(share.redditPostId);
-        let votes = post.score;
-        if(embedMessage && embedMessage.reactions['🤘']) {
-            votes += (embedMessage.reactions['🤘'].count - 1);
-        }
+        votes += ((post.score as number) - 1);
         share.votes = votes;
         share.save();
 
-        embed.addField(`Total Votes`, votes);
         embed.addField(`Reddit Link`, share.redditPostLink);
         embed.addField(`Reddit Comments`, post.num_comments.toString());
-        embed.timestamp = new Date();
     }
+    else {
+        if(embedMessage) {
+            const client = embedMessage.channel.client as FMcord;
+            const prefix = embedMessage.guildID !== null ? client.guildPrefixes[embedMessage.guildID!] ?? client.prefix : client.prefix;
+            embed.addField(`Reddit Link`,`Not Posted (admin, type ${prefix}login redditbot)`);
+        } // TODO: get client if embedMessage doesn't exist
+    }
+
+    embed.addField(`Total Votes`, `${votes}`);
+    embed.timestamp = new Date();
 }
 
 export default class ShareEmbed extends FMcordEmbed {
@@ -41,12 +51,12 @@ export default class ShareEmbed extends FMcordEmbed {
 
     // This must be called before returning the embed,
     // to make sure it has up-to-date info.
-    public async update(embedMessage?: Message) {
+    public async update(embedMessage: Message) {
         if(embedMessage) {
             this.embedMessage = embedMessage;
         }
         const { guildSettings } = await Guilds.findOneOrFail({discordID: this.message.guildID});
-        await addRedditInfo(this, this.share, guildSettings.reddit, this.embedMessage);
+        await addRedditInfo(this, this.share, guildSettings.reddit, embedMessage);
     }
 
 

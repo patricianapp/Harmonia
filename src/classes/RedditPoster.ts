@@ -78,8 +78,6 @@ export default class RedditPoster {
                 Authorization: `Bearer ${this.redditConfig.auth.bearerToken}`
             }
         })).data;
-        console.log(postId);
-        console.log(result);
         return result.data.children[0].data;
     }
 

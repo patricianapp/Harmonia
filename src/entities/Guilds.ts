@@ -1,9 +1,37 @@
 import { BaseEntity, Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 import NowPlayingMode from "../enums/NowPlayingMode";
 
+export enum LeaderboardFrequency {
+    Daily,
+    Weekly,
+    Monthly
+};
+
+export interface LeaderboardPostTimeDaily {
+    frequency: LeaderboardFrequency.Daily;
+    hour: number;
+}
+
+export interface LeaderboardPostTimeWeekly{
+    frequency: LeaderboardFrequency.Weekly;
+    day: number;
+    hour: number;
+}
+
+export interface LeaderboardPostTimeMonthly {
+    frequency: LeaderboardFrequency.Monthly;
+    hour: number;
+}
+
+export type LeaderboardPostTime =
+    LeaderboardPostTimeDaily |
+    LeaderboardPostTimeWeekly |
+    LeaderboardPostTimeMonthly;
+
 export interface GuildSettings {
     prefix: string;
-    nowPlayingMode: NowPlayingMode
+    timeZoneOffset: number;
+    nowPlayingMode: NowPlayingMode;
     reddit: {
         auth?: {
             bearerToken?: string;
@@ -16,11 +44,9 @@ export interface GuildSettings {
     }
     leaderboard: {
         enable: boolean;
-        postTime: {
-            day?: number; // 0-7, weekly
-            date?: number; // date of the month
-            hour: number;
-        }
+        frequency: LeaderboardFrequency;
+        weekResetDay: number;
+        resetHour: number;
         channelName?: string;
     }
     spotify: {
@@ -29,11 +55,12 @@ export interface GuildSettings {
             refreshToken?: string;
         }
         playlist?: {
-            frequency: string;
+            postTime: LeaderboardPostTime;
             playlistId?: string;
             albumPlaylistId?: string;
             amountOfTracks?: number; // if undefined, posts all tracks every week
-            alwaysKeepAmount: boolean; // keep some of last week's tracks if there aren't enough
+            amountOfAlbums?: number; // if undefined, posts all albums every week
+            enableMinTracks: boolean; // keep some of last week's tracks if there aren't enough
         }
     }
 }

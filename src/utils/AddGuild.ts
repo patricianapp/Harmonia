@@ -1,4 +1,4 @@
-import { Guilds } from "../entities/Guilds"
+import { Guilds, LeaderboardFrequency } from "../entities/Guilds"
 import NowPlayingMode from "../enums/NowPlayingMode";
 
 export default async (discordID: string): Promise<Guilds> => {
@@ -11,16 +11,16 @@ export default async (discordID: string): Promise<Guilds> => {
     guild.discordID = discordID;
     guild.guildSettings = {
         prefix: '&',
+        timeZoneOffset: 0,
         nowPlayingMode: NowPlayingMode.FULL,
         reddit: {
             autoFlair: true,
         },
         leaderboard: {
             enable: true,
-            postTime: {
-                day: 5,
-                hour: 12
-            }
+            frequency: LeaderboardFrequency.Weekly,
+            weekResetDay: 1,
+            resetHour: 9,
         },
         spotify: {}
     }
