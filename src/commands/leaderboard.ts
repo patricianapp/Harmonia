@@ -16,8 +16,6 @@ export default class ListCommand extends CommandParams {
             usage: [
                 `leaderboard`,
                 `leaderboard <time period>`,
-                `leaderboard <time period> <list length>`,
-                `leaderboard <time period> <list length> <user>`
             ].join(`, `),
             requirements: {
                 custom: NotDisabled,

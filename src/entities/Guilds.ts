@@ -55,6 +55,7 @@ export interface GuildSettings {
             refreshToken?: string;
         }
         playlist?: {
+            enable: boolean;
             postTime: LeaderboardPostTime;
             playlistId?: string;
             albumPlaylistId?: string;
