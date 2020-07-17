@@ -1,28 +1,35 @@
 import { stringify } from "querystring";
 import axios from "axios";
 import config from '../config';
+import { Guilds } from "../entities/Guilds";
 
 const url = `https://oauth.reddit.com/`;
 
 export default class RedditPoster {
 
     // type credentials once we know for sure what our auth method is
-    public constructor(private redditConfig: any) {
+    public constructor(private redditConfig: any, private guildID: string) {
     }
 
     public async refreshAccessToken() {
-        // TODO: If new Date() - auth.bearerTokenDate = 1 hr, getBearerToken()
+        if(Date.parse(new Date().toISOString()) - Date.parse(this.redditConfig.auth.bearerTokenDate) < 3540000) {
+            return;
+        }
 
-        // this.accessToken = (await axios.post('https://www.reddit.com/api/v1/access_token', stringify({
-        //     grant_type: 'password',
-        //     username: this.username,
-        //     password: this.password,
-        // }), {
-        //     auth: {
-        //         username: this.clientKey,
-        //         password: this.secret
-        //     }
-        // })).data.access_token;
+        const result = (await axios.post('https://www.reddit.com/api/v1/access_token', stringify({
+            grant_type: 'refresh_token',
+            refresh_token: this.redditConfig.auth.refreshToken,
+        }), {
+            auth: {
+                username: config.reddit.clientId,
+                password: config.reddit.secret,
+            }
+        })).data;
+        this.redditConfig.auth.bearerToken = result.access_token;
+        const guild = await Guilds.findOneOrFail({discordID: this.guildID});
+        guild.guildSettings.reddit = this.redditConfig;
+        guild.save();
+        return result;
     }
 
     public static async getBearerToken(code: string, redirect_uri: string) {

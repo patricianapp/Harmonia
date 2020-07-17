@@ -69,14 +69,16 @@ export default class SpotifyCommand extends CommandParams {
 
                         // post to reddit
                         const guild = await Guilds.findOneOrFail({discordID: message.guildID});
-                        const reddit = new RedditPoster(guild.guildSettings.reddit);
-                        const postId = await reddit.post({
-                            title: `${newShare.artist} - ${newShare.title}`,
-                            url: newShare.spotifyLink,
-                        }, newShare.channelName);
-                        newShare.redditPostLink = `https://reddit.com/r/${guild.guildSettings.reddit.subredditName}/comments/${postId}`;
-                        newShare.redditPostId = `t3_${postId}`;
-                        newShare.save();
+                        if(guild.guildSettings.reddit.auth) {
+                            const reddit = new RedditPoster(guild.guildSettings.reddit, guild.discordID);
+                            const postId = await reddit.post({
+                                title: `${newShare.artist} - ${newShare.title}`,
+                                url: newShare.spotifyLink,
+                            }, newShare.channelName);
+                            newShare.redditPostLink = `https://reddit.com/r/${guild.guildSettings.reddit.subredditName}/comments/${postId}`;
+                            newShare.redditPostId = `t3_${postId}`;
+                            newShare.save();
+                        }
 
                         // update response message
                         const embed = new ShareEmbed(message, newShare.spotifyLink, newShare);
@@ -131,16 +133,39 @@ export default class SpotifyCommand extends CommandParams {
         if (args.length) {
             const result = await lib.findTrack(args.join(` `));
             if (result.tracks.items[0]) {
-                    const track = result.tracks.items[0];
+                const track = result.tracks.items[0];
+                const linkMessage = await message.channel.createMessage(`${track.external_urls.spotify}`);
 
-                    const linkMessage = await message.channel.createMessage(track.external_urls.spotify);
-                    const embed = new ShareEmbed(message, track.external_urls.spotify, new Shares({
-                        linkMessage,
-                        user: await new UserFetcher(message).getAuthor(),
-                        artist: track.artists[0].name,
-                        title: track.name
-                    }));
-                    return { embed };
+                const artists = track.artists.map(artist => artist.name);
+
+                // TODO: Wrap this in util function
+                let artistStr: string;
+                if(artists.length >  2) {
+                    artists[artists.length - 1] = '& ' + artists[artists.length - 1];
+                    artistStr = artists.join(', ')
+                }
+                else if (artists.length === 2) {
+                    artistStr = artists.join(' & ')
+                }
+                else {
+                    artistStr = artists[0];
+                }
+
+                // save to database
+                const newShare = new Shares({
+                    linkMessage,
+                    user: await new UserFetcher(message).getAuthor(),
+                    artist: artistStr,
+                    title: track.name
+                });
+                newShare.mediaType = 'track';
+                newShare.discordRequestMessageID = message.id;
+                newShare.spotifyLink = track.external_urls.spotify;
+                await newShare.save();
+                console.log(`Share saved with ID ${newShare.id}`);
+
+                const embed = new ShareEmbed(message, track.external_urls.spotify, newShare);
+                return { embed };
             } else {
                 await message.channel.createMessage(`${message.author.mention}, nothing found when looking for \`${args.join(` `)}\``);
             }
@@ -178,8 +203,8 @@ export default class SpotifyCommand extends CommandParams {
                         artist: artistStr,
                         title: track.name
                     });
-                    newShare.discordRequestMessageID = message.id;
                     newShare.mediaType = 'track';
+                    newShare.discordRequestMessageID = message.id;
                     newShare.spotifyLink = track.external_urls.spotify;
                     await newShare.save();
                     console.log(`Share saved with ID ${newShare.id}`);

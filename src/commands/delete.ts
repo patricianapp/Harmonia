@@ -42,7 +42,7 @@ export default class ListCommand extends CommandParams {
         message.channel.deleteMessage(message.id);
 
         if(share.redditPostId) {
-          const redditPoster = new RedditPoster(config.reddit);
+          const redditPoster = new RedditPoster(config.reddit, share.discordGuildID);
           await redditPoster.deletePost(share.redditPostId);
         }
 

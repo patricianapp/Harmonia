@@ -54,7 +54,6 @@ export default class ListCommand extends CommandParams {
                 dateRange = getDateRangeWeek(weekResetDay, resetHour);
                 break;
         }
-        console.log(dateRange);
         const shares = await Shares.find({
             where: {
                 datePosted: Between(...dateRange),

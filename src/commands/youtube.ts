@@ -91,7 +91,7 @@ export default class YouTubeCommand extends CommandParams {
                         // post to reddit
                         const guild = await Guilds.findOneOrFail({discordID: message.guildID});
                         if(guild.guildSettings.reddit.auth) {
-                            const reddit = new RedditPoster(guild.guildSettings.reddit);
+                            const reddit = new RedditPoster(guild.guildSettings.reddit, guild.discordID);
                             const postId = await reddit.post({
                                 title: newShare.displayTitle,
                                 url: newShare.youtubeLink,

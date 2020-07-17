@@ -6,6 +6,10 @@ import { createConnection } from "typeorm";
 import express from "express";
 import http from "http";
 import { Prefixes } from "../entities/Prefixes";
+import { Guilds, LeaderboardFrequency, LeaderboardPostTimeWeekly } from "../entities/Guilds";
+import { CronJob } from 'cron';
+import { leaderboardPost } from "../jobs/leaderboardPost";
+import { spotifyPost } from "../jobs/spotifyPost";
 
 export interface FMcordOptions {
     apikeys: {
@@ -33,6 +37,10 @@ export default class FMcord extends CommandClient {
     };
     public readonly ownerID: string;
     public readonly guildPrefixes: { [s: string]: string };
+    public readonly guildCronJobs: { [s: string]: {
+        leaderboardPost?: CronJob,
+        spotifyPost?: CronJob
+    }};
 
     public constructor(token: string, options: ClientOptions, commandOptions: CommandClientOptions, config: FMcordOptions) {
         super(token, options, commandOptions);
@@ -40,6 +48,7 @@ export default class FMcord extends CommandClient {
         this.ownerID = config.ownerID;
         this.prefix = commandOptions.prefix as string;
         this.guildPrefixes = {};
+        this.guildCronJobs = {};
     }
 
     private loadCommands(dir: string = path.join(__dirname, `..`, `commands`)): this {
@@ -116,12 +125,67 @@ export default class FMcord extends CommandClient {
         return this;
     }
 
+    private async loadCronJobs(): Promise<this> {
+        const guilds = await Guilds.find();
+        guilds.forEach(({ discordID, guildSettings }) => {
+            let leaderboardJob, spotifyJob: CronJob;
+            if(guildSettings.leaderboard.enable && guildSettings.leaderboard.channelName) {
+                const { frequency, weekResetDay, resetHour } = guildSettings.leaderboard;
+                switch(frequency) {
+                    case LeaderboardFrequency.Daily:
+                        leaderboardJob = new CronJob(`0 0 ${resetHour} * * *`, () => {
+                            leaderboardPost(discordID);
+                        });
+                        break;
+                    case LeaderboardFrequency.Weekly:
+                        leaderboardJob = new CronJob(`0 0 ${resetHour} * * ${weekResetDay}`, () => {
+                            leaderboardPost(discordID);
+                        });
+                        break;
+                    case LeaderboardFrequency.Monthly:
+                        leaderboardJob = new CronJob(`0 0 ${resetHour} 1 * *`, () => {
+                            leaderboardPost(discordID);
+                        });
+                        break;
+                }
+                leaderboardJob.start();
+                this.guildCronJobs[discordID].leaderboardPost = leaderboardJob;
+            }
+
+            if(guildSettings.spotify.playlist) {
+                const { frequency, hour } = guildSettings.spotify.playlist.postTime;
+                switch(frequency) {
+                    case LeaderboardFrequency.Daily:
+                        spotifyJob = new CronJob(`0 0 ${hour} * * *`, () => {
+                            spotifyPost(discordID);
+                        });
+                        break;
+                    case LeaderboardFrequency.Weekly:
+                        const day = (guildSettings.spotify.playlist.postTime as LeaderboardPostTimeWeekly).day;
+                        spotifyJob = new CronJob(`0 0 ${hour} * * ${day}`, () => {
+                            spotifyPost(discordID);
+                        });
+                        break;
+                    case LeaderboardFrequency.Monthly:
+                        spotifyJob = new CronJob(`0 0 ${hour} 1 * *`, () => {
+                            spotifyPost(discordID);
+                        });
+                        break;
+                }
+                spotifyJob.start();
+                this.guildCronJobs[discordID].spotifyPost = spotifyJob;
+            }
+        })
+        return this;
+    }
+
     public init(): void {
         this.loadCommands()
             .loadEvents()
             .addExpressListener()
             .loadEntities()
             .then(client => client.loadPrefixes())
+            .then(client => client.loadCronJobs())
             .then(client => client.connect());
     }
 }
