@@ -49,7 +49,7 @@ export default class SettingsCommand extends CommandParams {
                 message.channel.createMessage(`${args[0]} set to ${args[1]}`);
             }
             else {
-                message.channel.createMessage(`Could not set ${args[0]} to ${args[1]}`);
+                message.channel.createMessage(`Could not set ${args[0]}`);
             }
         }
         else {
