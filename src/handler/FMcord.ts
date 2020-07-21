@@ -93,8 +93,8 @@ export default class FMcord extends CommandClient {
 
     private async loadEntities(dir: string = path.join(__dirname, `..`, `entities/*.{ts,js}`)): Promise<this> {
         await createConnection({
-            type: `sqlite`,
-            database: path.join(__dirname, `..`, `../database.sqlite`),
+            type: `postgres`,
+            url: process.env.DATABASE_URL,
             entities: [dir],
             synchronize: true
         });
