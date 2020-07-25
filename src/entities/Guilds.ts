@@ -47,6 +47,7 @@ export interface GuildSettings {
         frequency: LeaderboardFrequency;
         weekResetDay: number;
         resetHour: number;
+        channelID?: string;
         channelName?: string;
     }
     spotify: {

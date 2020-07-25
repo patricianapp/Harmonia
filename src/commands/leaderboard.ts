@@ -7,11 +7,13 @@ import { Shares } from "../entities/Shares";
 import { Between } from 'typeorm';
 import { Guilds } from "../entities/Guilds";
 import { getDateRangeDay, DateRange, getDateRangeWeek, getDateRangeMonth, dayNames } from "../utils/DateRange";
+import FMcord from "../handler/FMcord";
 
 export default class ListCommand extends CommandParams {
 
     public constructor() {
         super(`leaderboard`, {
+            aliases: [`leaderboards`],
             description: `Top voted tracks/albums over a time period.`,
             usage: [
                 `leaderboard`,
