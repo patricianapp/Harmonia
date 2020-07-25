@@ -83,6 +83,6 @@ export default class LeaderboardEnableSubcommand extends CommandParams {
         }
         leaderboardJob.start();
         client.guildCronJobs[guildId].leaderboardPost = leaderboardJob;
-
+        await message.channel.createMessage(`Leaderboard will post in channel ${channelName}`);
     }
 }

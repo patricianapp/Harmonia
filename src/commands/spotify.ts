@@ -55,12 +55,13 @@ export default class SpotifyCommand extends CommandParams {
                     });
                     if(responseMessage && newShare && newShare.spotifyLink) {
                         const client = responseMessage.channel.client as FMcord;
+                        newShare.discordInfoMessageID = responseMessage.id;
                         const trackId = responseMessage.embeds[0].url?.split('//open.spotify.com/track/')[1];
                         if(!trackId) return;
 
                         // get youtube info
                         const yt = new YouTubeRequest(client.apikeys.youtube!);
-                        const data = await yt.search(newShare.displayTitle);
+                        const data = await yt.search(newShare.displayTitle.replace(' - ', ' '));
                         const result = data.items[0];
                         if (result !== undefined) {
                             newShare.youtubeLink = `https://youtu.be/${result.id.videoId}`;
@@ -81,7 +82,7 @@ export default class SpotifyCommand extends CommandParams {
                         }
 
                         // update response message
-                        const embed = new ShareEmbed(message, newShare.spotifyLink, newShare);
+                        const embed = new ShareEmbed(message, 'spotify', newShare);
                         await embed.update(responseMessage);
                         responseMessage.edit({ embed });
                     }
@@ -164,7 +165,7 @@ export default class SpotifyCommand extends CommandParams {
                 await newShare.save();
                 console.log(`Share saved with ID ${newShare.id}`);
 
-                const embed = new ShareEmbed(message, track.external_urls.spotify, newShare);
+                const embed = new ShareEmbed(message, 'spotify', newShare);
                 return { embed };
             } else {
                 await message.channel.createMessage(`${message.author.mention}, nothing found when looking for \`${args.join(` `)}\``);
@@ -206,10 +207,11 @@ export default class SpotifyCommand extends CommandParams {
                     newShare.mediaType = 'track';
                     newShare.discordRequestMessageID = message.id;
                     newShare.spotifyLink = track.external_urls.spotify;
+                    newShare.spotifyId = track.id;
                     await newShare.save();
                     console.log(`Share saved with ID ${newShare.id}`);
 
-                    const embed = new ShareEmbed(message, track.external_urls.spotify, newShare);
+                    const embed = new ShareEmbed(message, 'spotify', newShare);
                     return { embed };
                 } else {
                     await message.channel.createMessage(`${message.author.mention}, your listened track wasn't found on Spotify.`);

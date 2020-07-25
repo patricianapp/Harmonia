@@ -10,7 +10,7 @@ export default {
     error: `There was an error trying to execute the ` +
     `command. Please try again later.`,
     github: `https://github.com/patricianapp/Harmonia`,
-    getSource: (cmd: string) => `https://github.com/patricianapp/Harmonia/blob/master/src/commands/${cmd}.ts`,
+    getSource: (cmd: string) => `https://github.com/patricianapp/Harmonia/blob/main/src/commands/${cmd}.ts`,
     notPlaying: `currently, you're not listening to anything.`,
     npNoLogin: `you haven't registered your Last.fm ` +
     `account, therefore, I can't check what you're listening to. To set ` +
@@ -21,7 +21,7 @@ export default {
     arrowLeft: `⬅`,
     arrowRight: `➡`,
     exit: `❌`,
-    dBotsLink: `https://top.gg/bot/521041865999515650`,
+    dBotsLink: `https://discord.com/api/oauth2/authorize?client_id=735381151358779392&permissions=272092784&scope=bot`,
     commonReasons: {
         noLogin: `Message author wasn't logged in.`,
         notPlaying: `No currently playing track found.`,

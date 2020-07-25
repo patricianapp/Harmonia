@@ -36,13 +36,31 @@ export default class ShareEmbed extends FMcordEmbed {
     private message: Message;
     private share: Shares;
 
-    public constructor(message: Message, link: string, share: Shares) {
+    public constructor(message: Message, command: string, share: Shares) {
         super(message);
         this.message = message;
         this.share = share;
-
         this.setTitle(share.displayTitle)
-            .setURL(link);
+
+        if(command === 'youtube') {
+            if(!share.youtubeLink) {
+                return;
+            }
+            this.setURL(share.youtubeLink);
+            if(share.spotifyLink) {
+                this.addField('Spotify Link', share.spotifyLink);
+            }
+        }
+        else if (command === 'spotify') {
+            if(!share.spotifyLink) {
+                return;
+            }
+            this.setURL(share.spotifyLink);
+            if(share.youtubeLink) {
+                this.addField('YouTube Link', share.youtubeLink);
+            }
+        }
+
     }
 
     // This must be called before returning the embed,
@@ -51,8 +69,6 @@ export default class ShareEmbed extends FMcordEmbed {
         const { guildSettings } = await Guilds.findOneOrFail({discordID: this.message.guildID});
         await addRedditInfo(this, this.share, guildSettings.reddit, embedMessage);
     }
-
-
 }
 
 export class ShareEmbedUpdate {

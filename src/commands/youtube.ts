@@ -15,6 +15,7 @@ import config from '../config';
 import ShareEmbed, { ShareEmbedUpdate } from "../classes/ShareEmbed";
 import { Users } from "../entities/Users";
 import { Guilds } from "../entities/Guilds";
+import { processYtVideoTitle } from "../utils/YouTubeTitle";
 
 export default class YouTubeCommand extends CommandParams {
 
@@ -58,13 +59,7 @@ export default class YouTubeCommand extends CommandParams {
                         // get spotify info
                         const { spotify } = client.apikeys;
                         const lib = new Spotify(spotify!.id, spotify!.secret);
-                        let spotifyQuery: string;
-                        if(args.length > 0) {
-                            spotifyQuery = args.join(` `);
-                        }
-                        else {
-                            spotifyQuery = newShare.displayTitle;
-                        }
+                        const spotifyQuery = newShare.displayTitle.replace(' - ', ' ');
                         const spotifyResult = await lib.findTrack(spotifyQuery);
                         if (spotifyResult.tracks.items[0]) {
                             const spotifyTrack = spotifyResult.tracks.items[0];
@@ -102,7 +97,7 @@ export default class YouTubeCommand extends CommandParams {
                         }
 
                         // update response message
-                        const embed = new ShareEmbed(message, newShare.youtubeLink, newShare);
+                        const embed = new ShareEmbed(message, 'youtube', newShare);
                         await embed.update(responseMessage);
                         responseMessage.edit({ embed });
                     }
@@ -173,12 +168,13 @@ export default class YouTubeCommand extends CommandParams {
         const result = data.items[0];
         if (result !== undefined) {
             const linkMessage = await message.channel.createMessage(`${message.author.mention}, result for query \`${query}\`: https://youtu.be/${result.id.videoId}`);
+            const { artist, track } = processYtVideoTitle(result.snippet.title);
 
             // save to database
             const newShare = new Shares({
                 linkMessage,
                 user: await new UserFetcher(message).getAuthor(),
-                displayTitle: result.snippet.title
+                displayTitle: artist ? `${artist} - ${track}` : track
             });
             newShare.mediaType = 'track';
             newShare.discordRequestMessageID = message.id;
@@ -187,7 +183,7 @@ export default class YouTubeCommand extends CommandParams {
             await newShare.save();
             console.log(`Share saved with ID ${newShare.id}`);
 
-            const embed = new ShareEmbed(message, newShare.youtubeLink, newShare);
+            const embed = new ShareEmbed(message, 'youtube', newShare);
             return { embed };
         } else {
             await message.channel.createMessage(`${message.author.mention}, no results found on query \`${query}\``);
