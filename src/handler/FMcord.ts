@@ -129,6 +129,7 @@ export default class FMcord extends CommandClient {
         const guilds = await Guilds.find();
         guilds.forEach(({ discordID, guildSettings }) => {
             let leaderboardJob, spotifyJob: CronJob;
+            this.guildCronJobs[discordID] = {};
             if(guildSettings.leaderboard.enable && guildSettings.leaderboard.channelName) {
                 const { frequency, weekResetDay, resetHour } = guildSettings.leaderboard;
                 switch(frequency) {
