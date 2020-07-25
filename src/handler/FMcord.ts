@@ -129,23 +129,24 @@ export default class FMcord extends CommandClient {
         const guilds = await Guilds.find();
         guilds.forEach(({ discordID, guildSettings }) => {
             let leaderboardJob, spotifyJob: CronJob;
-            if(guildSettings.leaderboard.enable && guildSettings.leaderboard.channelName) {
+            this.guildCronJobs[discordID] = {};
+            if(guildSettings.leaderboard.enable && guildSettings.leaderboard.channelID) {
                 const { frequency, weekResetDay, resetHour } = guildSettings.leaderboard;
                 switch(frequency) {
                     case LeaderboardFrequency.Daily:
                         leaderboardJob = new CronJob(`0 0 ${resetHour} * * *`, () => {
-                            leaderboardPost(discordID);
-                        });
+                            leaderboardPost(guildSettings, discordID, this);
+                        }, undefined, undefined, undefined, undefined, undefined, 0);
                         break;
                     case LeaderboardFrequency.Weekly:
                         leaderboardJob = new CronJob(`0 0 ${resetHour} * * ${weekResetDay}`, () => {
-                            leaderboardPost(discordID);
-                        });
+                            leaderboardPost(guildSettings, discordID, this);
+                        }, undefined, undefined, undefined, undefined, undefined, 0);
                         break;
                     case LeaderboardFrequency.Monthly:
                         leaderboardJob = new CronJob(`0 0 ${resetHour} 1 * *`, () => {
-                            leaderboardPost(discordID);
-                        });
+                            leaderboardPost(guildSettings, discordID, this);
+                        }, undefined, undefined, undefined, undefined, undefined, 0);
                         break;
                 }
                 leaderboardJob.start();
@@ -158,18 +159,18 @@ export default class FMcord extends CommandClient {
                     case LeaderboardFrequency.Daily:
                         spotifyJob = new CronJob(`0 0 ${hour} * * *`, () => {
                             spotifyPost(discordID);
-                        });
+                        }, undefined, undefined, undefined, undefined, undefined, 0);
                         break;
                     case LeaderboardFrequency.Weekly:
                         const day = (guildSettings.spotify.playlist.postTime as LeaderboardPostTimeWeekly).day;
                         spotifyJob = new CronJob(`0 0 ${hour} * * ${day}`, () => {
                             spotifyPost(discordID);
-                        });
+                        }, undefined, undefined, undefined, undefined, undefined, 0);
                         break;
                     case LeaderboardFrequency.Monthly:
                         spotifyJob = new CronJob(`0 0 ${hour} 1 * *`, () => {
                             spotifyPost(discordID);
-                        });
+                        }, undefined, undefined, undefined, undefined, undefined, 0);
                         break;
                 }
                 spotifyJob.start();

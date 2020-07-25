@@ -1,46 +1,52 @@
-// export type DateRange = [Date, Date];
-export type DateRange = [string, string];
+export type DateRange = [Date, Date];
+// export type DateRange = [string, string];
 export const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-export const getDateRangeDay = (resetHour: number): DateRange => {
+const initDates = (): DateRange => {
     const start = new Date();
-    const end = new Date();
-    if(start.getHours() < resetHour) {
-        start.setDate(start.getDate() - 1);
-    } else {
-        end.setDate(start.getDate() + 1);
-    }
-    start.setHours(resetHour);
-    end.setHours(resetHour);
+    start.setUTCMinutes(0, 0, 0);
+    const end = new Date(start);
+    return [start, end];
+}
 
-    return [ start.toISOString().replace('T', ' '), end.toISOString().replace('T', ' ') ];
+export const getDateRangeDay = (resetHour: number): DateRange => {
+    const [start, end] = initDates();
+    if(start.getUTCHours() < resetHour) {
+        start.setUTCDate(start.getUTCDate() - 1);
+    } else {
+        end.setUTCDate(start.getUTCDate() + 1);
+    }
+    start.setUTCHours(resetHour);
+    end.setUTCHours(resetHour);
+
+    return [start, end];
 }
 
 export const getDateRangeWeek = (resetDay: number, resetHour: number): DateRange => {
-    const start = new Date();
-    const end = new Date();
+    const [start, end] = initDates();
 
-    let difference = start.getDay() - resetDay;
+    let difference = start.getUTCDay() - resetDay;
     if(difference < 0) {
         difference += 7;
     }
-    start.setDate(start.getDate() - difference);
-    end.setDate(start.getDate() + 7);
+    start.setUTCDate(start.getUTCDate() - difference);
+    end.setUTCDate(start.getUTCDate() + 7);
 
-    start.setHours(resetHour);
-    end.setHours(resetHour);
+    start.setUTCHours(resetHour);
+    end.setUTCHours(resetHour);
 
-    return [ start.toISOString().replace('T', ' '), end.toISOString().replace('T', ' ') ];
+    return [start, end];
 }
 
-export const getDateRangeMonth = (): DateRange => {
-    const start = new Date();
-    const end = new Date();
+export const getDateRangeMonth = (utcOffset: number): DateRange => {
+    const [start, end] = initDates();
 
     end.setMonth(start.getMonth() + 1);
-    start.setDate(0);
-    end.setDate(0);
-    return [ start.toISOString().replace('T', ' '), end.toISOString().replace('T', ' ') ];
+    start.setUTCDate(1);
+    end.setUTCDate(1);
+    start.setUTCHours(0 - utcOffset);
+    end.setUTCHours(0 - utcOffset);
+    return [start, end];
 }
 
 

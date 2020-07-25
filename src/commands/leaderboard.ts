@@ -7,11 +7,13 @@ import { Shares } from "../entities/Shares";
 import { Between } from 'typeorm';
 import { Guilds } from "../entities/Guilds";
 import { getDateRangeDay, DateRange, getDateRangeWeek, getDateRangeMonth, dayNames } from "../utils/DateRange";
+import FMcord from "../handler/FMcord";
 
 export default class ListCommand extends CommandParams {
 
     public constructor() {
         super(`leaderboard`, {
+            aliases: [`leaderboards`],
             description: `Top voted tracks/albums over a time period.`,
             usage: [
                 `leaderboard`,
@@ -31,27 +33,32 @@ export default class ListCommand extends CommandParams {
         const timePeriod = args[0] ?? 'weekly';
         const { guildSettings } = await Guilds.findOneOrFail({discordID: message.guildID});
         const { resetHour, weekResetDay } = guildSettings.leaderboard;
+        const offset = guildSettings.timeZoneOffset;
+        let resetHourLocalized = (resetHour + offset) % 24;
+        if(resetHourLocalized < 0) resetHourLocalized += 24;
         let resetStr = '';
 
         let dateRange: DateRange;
+
         switch(timePeriod) {
             case 'daily':
-                resetStr = `Daily leaderboard resets at ${resetHour}:00`;
+                resetStr = `Daily leaderboard resets at ${resetHourLocalized}:00`;
                 dateRange = getDateRangeDay(resetHour);
                 break;
             case 'weekly':
-                resetStr = `Weekly leaderboard resets every ${dayNames[weekResetDay]} on ${resetHour}:00`;
+                resetStr = `Weekly leaderboard resets every ${dayNames[weekResetDay]} at ${resetHourLocalized}:00`;
                 dateRange = getDateRangeWeek(weekResetDay, resetHour);
                 break;
             case 'monthly':
                 resetStr = `Monthly leaderboard resets on the 1st of each month`;
-                dateRange = getDateRangeMonth();
+                dateRange = getDateRangeMonth(offset);
                 break;
             default:
-                resetStr = `Weekly leaderboard resets every ${dayNames[weekResetDay]} on ${resetHour}:00`;
+                resetStr = `Weekly leaderboard resets every ${dayNames[weekResetDay]} at ${resetHourLocalized}:00`;
                 dateRange = getDateRangeWeek(weekResetDay, resetHour);
                 break;
         }
+        console.log(dateRange);
         const shares = await Shares.find({
             where: {
                 datePosted: Between(...dateRange),

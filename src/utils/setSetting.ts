@@ -18,6 +18,7 @@ const stringSettings = [
 
 const numberSettings = [
     'timeZoneOffset',
+    'leaderboard.frequency',
     'leaderboard.weekResetDay',
     'leaderboard.resetHour',
     'spotify.playlist.amountOfTracks',
