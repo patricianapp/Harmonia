@@ -5,6 +5,7 @@ import FMcord from "../../handler/FMcord";
 import NotDisabled from "../../checks/NotDisabled";
 import StartTyping from "../../hooks/StartTyping";
 import PostCheck from "../../hooks/PostCheck";
+import { Guilds } from "../../entities/Guilds";
 
 export default class SetSubcommand extends CommandParams {
 
@@ -30,22 +31,11 @@ export default class SetSubcommand extends CommandParams {
     public async execute(message: Message, args: string[]): Promise<void> {
         const prefix = args[0];
         const client = message.channel.client as FMcord;
-        if (prefix.length < 3 && prefix !== client.prefix) {
-            const hasPrefix = await Prefixes.count({
-                guildID: message.guildID,
-                prefix
-            });
-            if (hasPrefix > 0) {
-                await message.channel.createMessage(`${message.author.mention}, you already have a prefix set! Please delete your existing ` +
-                `prefix in order to set a new one.`);
-                return;
-            } else {
-                const newPrefix = new Prefixes();
-                newPrefix.guildID = message.guildID!;
-                newPrefix.prefix = prefix;
-                await newPrefix.save();
-                client.registerGuildPrefix(message.guildID!, prefix);
-            }
+        if (prefix.length < 3) {
+            const guild = await Guilds.findOneOrFail({discordID: message.guildID});
+            guild.guildSettings.prefix = prefix;
+            guild.save();
+            client.registerGuildPrefix(message.guildID!, prefix);
             await message.channel.createMessage(`${message.author.mention}, prefix in ${message.member!.guild.name} has been set to \`${prefix}\` succesfully!`);
         } else if (prefix.length >= 3) {
             await message.channel.createMessage(`${message.author.mention}, your prefix is too long! It cannot be longer than 2 symbols.`);

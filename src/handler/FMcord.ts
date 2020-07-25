@@ -125,9 +125,11 @@ export default class FMcord extends CommandClient {
         return this;
     }
 
-    private async loadCronJobs(): Promise<this> {
+    private async loadGuildSettings(): Promise<this> {
         const guilds = await Guilds.find();
         guilds.forEach(({ discordID, guildSettings }) => {
+            this.registerGuildPrefix(discordID, guildSettings.prefix);
+
             let leaderboardJob, spotifyJob: CronJob;
             this.guildCronJobs[discordID] = {};
             if(guildSettings.leaderboard.enable && guildSettings.leaderboard.channelID) {
@@ -185,8 +187,7 @@ export default class FMcord extends CommandClient {
             .loadEvents()
             .addExpressListener()
             .loadEntities()
-            .then(client => client.loadPrefixes())
-            .then(client => client.loadCronJobs())
+            .then(client => client.loadGuildSettings())
             .then(client => client.connect());
     }
 }
