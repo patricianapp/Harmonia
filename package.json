@@ -13,7 +13,8 @@
     "start": "npm run launch",
     "lint": "eslint src/**/**.ts src/**/**/*.ts",
     "lint-fix": "eslint src/**/**.ts src/**/**/*.ts --fix",
-    "test": "npm run lint"
+    "test": "npm run lint",
+    "postinstall": "patch-package"
   },
   "author": "",
   "license": "ISC",
@@ -27,6 +28,7 @@
     "lodash": "^4.17.19",
     "luxon": "^1.24.1",
     "metadata-filter": "^0.4.1",
+    "patch-package": "^6.2.2",
     "pg": "^8.3.0",
     "sqlite3": "^4.1.1",
     "typeorm": "^0.2.24"
