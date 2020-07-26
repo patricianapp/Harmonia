@@ -48,7 +48,7 @@ export default class ChartCommand extends CommandParams {
     }
 
     public async execute(message: Message, args: string[]): Promise<void> {
-        const failed = await loadImage(path.join(__dirname, `../../..`, `images`, `failed_to_load.png`));
+        const failed = await loadImage(path.join(__dirname, `../..`, `images`, `failed_to_load.png`));
         const client = message.channel.client as FMcord;
         const userFetcher = new UserFetcher(message);
         const lib = new Library(client.apikeys.lastFM);
@@ -185,8 +185,8 @@ export default class ChartCommand extends CommandParams {
                 const stretchedWidth = attachedImage.width * coefficient;
                 fctx.drawImage(
                     attachedImage,
-                    -((stretchedWidth - finalCanvas.width) / 2), 
-                    -((stretchedHeight - finalCanvas.height) / 2), 
+                    -((stretchedWidth - finalCanvas.width) / 2),
+                    -((stretchedHeight - finalCanvas.height) / 2),
                     stretchedWidth,
                     stretchedHeight,
                 );
