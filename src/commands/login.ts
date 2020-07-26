@@ -11,14 +11,14 @@ import UserFetcher from "../classes/UserFetcher";
 export default class SetnickCommand extends CommandParams {
 
     public constructor() {
-        super(`setnick`, {
-            aliases: [`login`],
+        super(`login`, {
+            aliases: [`setnick`],
             description: `Sets your nickname in the bot's database.`,
             fullDescription: `This command can also be used to update your current nickname.`,
-            usage: `setnick <nickname>`,
+            usage: `login <nickname>`,
             argsRequired: true,
             invalidUsageMessage: (message: Message) => `${message.author.mention}, you must provide a Last.fm username!`,
-            hooks: { 
+            hooks: {
                 postCheck: PostCheck,
                 preCommand: StartTyping
             },

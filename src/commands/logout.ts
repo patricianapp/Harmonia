@@ -10,10 +10,10 @@ import UsernameAndNotDisabled from "../checks/UsernameAndNotDisabled";
 export default class DelnickCommand extends CommandParams {
 
     public constructor() {
-        super(`delnick`, {
-            aliases: [`logout`],
+        super(`logout`, {
+            aliases: [`delnick`],
             description: `Removes your nickname from the bot's database.`,
-            usage: `delnick`,
+            usage: `logout`,
             requirements: {
                 custom: UsernameAndNotDisabled
             },
