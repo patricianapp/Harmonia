@@ -19,7 +19,7 @@ export default class SpotifyCommand extends CommandParams {
     public constructor() {
         super(`spotify`, {
             description: `Gets a link of a song from Spotify. If no song is provided, ` +
-            `the bot will try to get your currently played track.`,
+            `the bot will try to get your currently playing track.`,
             usage: [`spotify <song name>`, `spotify`].join(`, `),
             aliases: [`sp`],
             hooks: {

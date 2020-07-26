@@ -1,6 +1,6 @@
 import CommandParams from "../handler/CommandParams";
 import StartTyping from "../hooks/StartTyping";
-import { Message, MessageContent, TextChannel } from "eris";
+import { Message, MessageContent } from "eris";
 import FMcord from "../handler/FMcord";
 import TrackFetcher from "../classes/TrackFetcher";
 import snippets from "../snippets";
@@ -11,9 +11,7 @@ import UserFetcher from "../classes/UserFetcher";
 import { Shares } from "../entities/Shares";
 import Spotify from "../lib/spotify";
 import RedditPoster from "../classes/RedditPoster";
-import config from '../config';
 import ShareEmbed, { ShareEmbedUpdate } from "../classes/ShareEmbed";
-import { Users } from "../entities/Users";
 import { Guilds } from "../entities/Guilds";
 import { processYtVideoTitle } from "../utils/YouTubeTitle";
 

@@ -2,7 +2,6 @@ import CommandParams from "../../handler/CommandParams";
 import StartTyping from "../../hooks/StartTyping";
 import PostCheck from "../../hooks/PostCheck";
 import { Message } from "eris";
-import OwnerOnly from "../../checks/OwnerOnly";
 import { Guilds } from "../../entities/Guilds";
 import RedditPoster from "../../classes/RedditPoster";
 import { RedditAuthRequests } from "../../entities/RedditAuthRequests";
@@ -12,12 +11,16 @@ export default class RedditBotSubcommand extends CommandParams {
 
     public constructor() {
         super(`redditbot`, {
+            guildOnly: true,
             hooks: {
                 preCommand: StartTyping,
                 postCheck: PostCheck
             },
+            permissionMessage: (message: Message) => `${message.author.mention}, you do not have a permission \`Manage Guild\` to execute this command.`,
             requirements: {
-                custom: OwnerOnly
+                permissions: {
+                    manageGuild: true
+                }
             },
             aliases: [`r`],
         });

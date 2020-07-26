@@ -7,7 +7,6 @@ import { Shares } from "../entities/Shares";
 import { Between } from 'typeorm';
 import { Guilds } from "../entities/Guilds";
 import { getDateRangeDay, DateRange, getDateRangeWeek, getDateRangeMonth, dayNames } from "../utils/DateRange";
-import FMcord from "../handler/FMcord";
 
 export default class ListCommand extends CommandParams {
 
@@ -15,6 +14,7 @@ export default class ListCommand extends CommandParams {
         super(`leaderboard`, {
             aliases: [`leaderboards`],
             description: `Top voted tracks/albums over a time period.`,
+            fullDescription: `Valid values for <time period> are daily, weekly, and monthly. If no time period is entered, weekly is the default.`,
             usage: [
                 `leaderboard`,
                 `leaderboard <time period>`,
@@ -54,6 +54,7 @@ export default class ListCommand extends CommandParams {
                 dateRange = getDateRangeMonth(offset);
                 break;
             default:
+                await message.channel.createMessage(`Invalid time period. Defaulting to weekly.`);
                 resetStr = `Weekly leaderboard resets every ${dayNames[weekResetDay]} at ${resetHourLocalized}:00`;
                 dateRange = getDateRangeWeek(weekResetDay, resetHour);
                 break;
@@ -73,7 +74,7 @@ export default class ListCommand extends CommandParams {
 
         const reply = '**Leaderboard**\n' + shares.map((post: Shares) =>
             `${post.displayTitle} (posted by <@${post.user.discordUserID}> in #${post.channelName}: ${post.votes} votes)`
-        ).join('\n') + '\n' + resetStr;
+        ).join('\n') + '\n\n' + resetStr;
         await message.channel.createMessage(reply);
     }
 }
