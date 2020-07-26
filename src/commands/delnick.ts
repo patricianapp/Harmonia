@@ -28,8 +28,8 @@ export default class DelnickCommand extends CommandParams {
         const userFetcher = new UserFetcher(message);
         const user = await userFetcher.getAuthor();
         await Modes.delete({ user });
-        await Users.delete({ discordUserID: user?.discordUserID });
+        user.lastFMUsername = '';
+        user.save();
         await message.channel.createMessage(`${message.author.mention}, your nickname was deleted succesfully!`);
     }
-
 }
