@@ -16,11 +16,6 @@ export default class RedditBotSubcommand extends CommandParams {
                 postCheck: PostCheck
             },
             permissionMessage: (message: Message) => `${message.author.mention}, you do not have a permission \`Manage Guild\` to execute this command.`,
-            requirements: {
-                permissions: {
-                    manageGuild: true
-                }
-            },
             aliases: [`r`],
         });
     }
