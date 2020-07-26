@@ -11,7 +11,6 @@ export default class RedditBotSubcommand extends CommandParams {
 
     public constructor() {
         super(`redditbot`, {
-            guildOnly: true,
             hooks: {
                 preCommand: StartTyping,
                 postCheck: PostCheck
