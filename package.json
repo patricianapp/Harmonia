@@ -13,8 +13,7 @@
     "start": "npm run launch",
     "lint": "eslint src/**/**.ts src/**/**/*.ts",
     "lint-fix": "eslint src/**/**.ts src/**/**/*.ts --fix",
-    "test": "npm run lint",
-    "postinstall": "patch-package"
+    "test": "npm run lint"
   },
   "author": "",
   "license": "ISC",
@@ -27,7 +26,7 @@
     "express": "^4.17.1",
     "lodash": "^4.17.19",
     "luxon": "^1.24.1",
-    "metadata-filter": "^0.4.1",
+    "metadata-filter": "github:web-scrobbler/metadata-filter#master",
     "patch-package": "^6.2.2",
     "pg": "^8.3.0",
     "sqlite3": "^4.1.1",

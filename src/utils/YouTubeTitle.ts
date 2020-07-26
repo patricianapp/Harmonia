@@ -1,5 +1,5 @@
 // Modified from web-scrobbler: https://github.com/web-scrobbler/web-scrobbler/blob/26b0a4f388799b1eeb1dfe1e21c747f3496ea53e/src/core/content/util.js#L561
-import MetadataFilter = require('metadata-filter');
+import { getYoutubeFilter, decodeHtmlEntities } from 'metadata-filter';
 
 type ArtistTrack = {
   artist: string | null;
@@ -71,7 +71,7 @@ export const processYtVideoTitle = (videoTitle: string): ArtistTrackResponse => 
     track = videoTitle
   }
 
-  const filter = MetadataFilter.getYoutubeFilter().append({track: MetadataFilter.decodeHtmlEntities});
+  const filter = getYoutubeFilter().append({track: decodeHtmlEntities});
 
   if(artist) {
     artist = filter.filterField('track', artist);
