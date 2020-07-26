@@ -6,7 +6,7 @@ import FMcord from "../handler/FMcord";
 import { TextChannel } from "eris";
 
 export const leaderboardPost = async (guildSettings: GuildSettings, guildID: string, client: FMcord) => {
-    if(!guildSettings.leaderboard.channelID) {
+    if(!guildSettings.leaderboard.channelID || !guildSettings.leaderboard.enable) {
         return;
     }
 
